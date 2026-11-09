@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbf6e6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="閱讀日曆">
+<title>我的閱讀日曆</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gochi+Hand&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<style>
+  /* Layout: one centered column on a cream doodle-wallpaper ground; every card is a "sticker" with a thick ink outline and hard offset shadow; bottom tab bar 日曆 / 書櫃 / 夥伴 / 統計 */
+  :root {
+    --bg: #fbf6e6;            /* cream paper */
+    --card: #fffdf5;
+    --ink: #1d1d1b;           /* marker outline */
+    --muted: #6f6a5c;
+    --soft: #f4ecd2;
+    --field: #ffffff;
+    --sticker-ink: #1d1d1b;   /* text on bright stickers, same in both themes */
+    --red: #ff5a3c;
+    --yellow: #ffd23f;
+    --blue: #2fb8ff;
+    --green: #6cc04a;
+    --purple: #9b8bd6;
+    --orange: #ff8a1f;
+    --pink: #ff8fb1;
+    --sun: #e5402a;           /* Sunday numerals */
+    --scrim: rgba(29,29,27,.45);
+    --wob: 18px 24px 16px 22px / 22px 16px 24px 18px;
+    --wob-s: 12px 16px 10px 14px / 14px 10px 16px 12px;
+    --pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' fill='none' stroke='%231d1d1b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='.08'%3E%3Cpath d='M12 22q8-12 16 0t16 0t16 0'/%3E%3Cpath d='M128 26l5 10 11 1-8 7 3 11-11-6-10 6 3-11-8-7 11-1z'/%3E%3Ccircle cx='70' cy='96' r='8'/%3E%3Cpath d='M112 132c-7-9-21-2-11 9l11 11 11-11c10-11-4-18-11-9z'/%3E%3Cpath d='M22 138l10 10M32 138l-10 10'/%3E%3Cpath d='M150 92q-6 6 0 12t0 12'/%3E%3C/svg%3E");
+    --num: "Gochi Hand", "Huninn", "Comic Sans MS", cursive;
+    --body: "Huninn", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1b18; --card: #2a2824; --ink: #f6efdc; --muted: #b5ad98; --soft: #36332c; --field: #23211d;
+      --sun: #ff7a62; --scrim: rgba(0,0,0,.6);
+      --pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' fill='none' stroke='%23f6efdc' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='.07'%3E%3Cpath d='M12 22q8-12 16 0t16 0t16 0'/%3E%3Cpath d='M128 26l5 10 11 1-8 7 3 11-11-6-10 6 3-11-8-7 11-1z'/%3E%3Ccircle cx='70' cy='96' r='8'/%3E%3Cpath d='M112 132c-7-9-21-2-11 9l11 11 11-11c10-11-4-18-11-9z'/%3E%3Cpath d='M22 138l10 10M32 138l-10 10'/%3E%3Cpath d='M150 92q-6 6 0 12t0 12'/%3E%3C/svg%3E");
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1b18; --card: #2a2824; --ink: #f6efdc; --muted: #b5ad98; --soft: #36332c; --field: #23211d;
+    --sun: #ff7a62; --scrim: rgba(0,0,0,.6);
+    --pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' fill='none' stroke='%23f6efdc' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='.07'%3E%3Cpath d='M12 22q8-12 16 0t16 0t16 0'/%3E%3Cpath d='M128 26l5 10 11 1-8 7 3 11-11-6-10 6 3-11-8-7 11-1z'/%3E%3Ccircle cx='70' cy='96' r='8'/%3E%3Cpath d='M112 132c-7-9-21-2-11 9l11 11 11-11c10-11-4-18-11-9z'/%3E%3Cpath d='M22 138l10 10M32 138l-10 10'/%3E%3Cpath d='M150 92q-6 6 0 12t0 12'/%3E%3C/svg%3E");
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg) var(--pattern); color: var(--ink); font-family: var(--body); font-size: 15px; min-height: 100%; }
+  button { font-family: inherit; cursor: pointer; color: inherit; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .day:focus-visible { outline: 3px dashed var(--blue); outline-offset: 3px; }
+  .app { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 116px; }
+
+  /* sticker primitives */
+  .sticker { background: var(--card); border: 2.5px solid var(--ink); border-radius: var(--wob); box-shadow: 4px 4px 0 var(--ink); }
+  .btn { border: 2.5px solid var(--ink); border-radius: var(--wob-s); padding: 9px 16px; font-size: 15px; font-weight: 700; box-shadow: 3px 3px 0 var(--ink); background: var(--card); transition: transform .08s, box-shadow .08s; }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn.primary { background: var(--red); color: #fff; }
+  .btn.yellow { background: var(--yellow); color: var(--sticker-ink); }
+  .btn.ghost { background: var(--card); }
+  .btn.danger { background: var(--card); color: var(--red); }
+  .btn.small { padding: 6px 12px; font-size: 13px; box-shadow: 2px 2px 0 var(--ink); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .month-nav { display: flex; align-items: center; gap: 6px; }
+  .month-title { font-family: var(--num); font-size: 30px; line-height: 1; white-space: nowrap; }
+  .month-title span { font-size: 1.5em; color: var(--red); }
+  .icon-btn { background: var(--card); border: 2.5px solid var(--ink); border-radius: 50% 45% 50% 42%; width: 38px; height: 38px; font-size: 17px; font-weight: 700; box-shadow: 2px 2px 0 var(--ink); padding: 0; flex-shrink: 0; }
+  .icon-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+  .head-right { display: flex; gap: 6px; align-items: center; }
+  .sync { font-size: 12px; padding: 4px 10px; border: 2px dashed var(--ink); border-radius: 999px; white-space: nowrap; }
+
+  /* companion strip on the calendar */
+  .buddy { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; }
+  .buddy .mini { width: 74px; height: 74px; flex-shrink: 0; background: #fff9e8; border: 2.5px solid var(--ink); border-radius: 50% 46% 52% 44%; box-shadow: 3px 3px 0 var(--ink); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
+  .buddy .mini svg { width: 70px; height: 70px; transform: scale(var(--z, 1)); transform-origin: 50% 92%; }
+  .bubble { position: relative; background: var(--card); border: 2.5px solid var(--ink); border-radius: var(--wob); padding: 9px 13px; font-size: 14px; line-height: 1.5; flex: 1; min-width: 0; box-shadow: 3px 3px 0 var(--ink); }
+  .bubble::before { content: ""; position: absolute; left: -11px; top: 50%; width: 14px; height: 14px; background: var(--card); border-left: 2.5px solid var(--ink); border-bottom: 2.5px solid var(--ink); transform: translateY(-50%) rotate(45deg); }
+  .bubble b { color: var(--red); }
+
+  .summary { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .chip { border: 2.5px solid var(--ink); border-radius: var(--wob-s); padding: 4px 12px; font-size: 13px; color: var(--sticker-ink); box-shadow: 2px 2px 0 var(--ink); }
+  .chip b { font-family: var(--num); font-size: 20px; font-weight: 400; margin: 0 2px; }
+  .chip:nth-child(1) { background: var(--yellow); transform: rotate(-1.5deg); }
+  .chip:nth-child(2) { background: var(--blue); transform: rotate(1deg); }
+  .chip:nth-child(3) { background: var(--green); transform: rotate(-.5deg); }
+  .chip:nth-child(4) { background: var(--pink); transform: rotate(1.2deg); }
+
+  .calendar { overflow: hidden; }
+  .dow, .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .dow { border-bottom: 2.5px solid var(--ink); }
+  .dow div { text-align: center; padding: 7px 0; font-weight: 700; font-size: 14px; }
+  .dow div.sun { color: var(--sun); }
+  .week + .week { border-top: 1.5px dashed var(--muted); }
+  .day { min-height: 104px; padding: 4px 2px 6px; text-align: center; cursor: pointer; min-width: 0; transition: background .15s; }
+  .day:hover { background: var(--soft); }
+  .day.empty { cursor: default; background: transparent; }
+  .num { display: inline-block; width: 32px; height: 32px; line-height: 34px; font-family: var(--num); font-size: 22px; }
+  .day.today .num { background: var(--yellow); color: var(--sticker-ink); border: 2.5px solid var(--ink); border-radius: 50% 42% 55% 45%; line-height: 29px; }
+  .day.sun .num { color: var(--sun); }
+  .day.today.sun .num { color: #b3261e; }
+  .covers { position: relative; height: 62px; margin: 2px auto 0; width: 46px; }
+  .covers img, .covers .ph { position: absolute; width: 40px; height: 58px; object-fit: cover; border-radius: 3px; border: 2px solid var(--ink); }
+  .ph { display: flex; align-items: center; justify-content: center; text-align: center; font-size: 9px; padding: 3px; overflow: hidden; color: var(--sticker-ink); line-height: 1.15; font-weight: 700; }
+  .stars-mini { font-size: 9px; color: var(--orange); letter-spacing: -1px; height: 11px; }
+  .pages-mini { font-size: 11px; color: var(--muted); font-family: var(--num); }
+
+  nav.tabs { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); display: flex; justify-content: center; border-top: 2.5px solid var(--ink); z-index: 20; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  nav.tabs button { flex: 1; max-width: 160px; background: none; border: none; padding: 6px 0 9px; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  nav.tabs svg { width: 28px; height: 28px; }
+  nav.tabs button.active { color: var(--ink); font-weight: 700; }
+  nav.tabs button.active svg .fillme { fill: var(--yellow); }
+  .fab { position: fixed; right: max(16px, calc(50% - 364px)); bottom: calc(82px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50% 44% 52% 46%; border: 2.5px solid var(--ink); background: var(--red); color: #fff; font-size: 32px; line-height: 1; box-shadow: 3px 3px 0 var(--ink); z-index: 21; }
+  .fab:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+  .panel { padding: 14px; }
+  .filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter button { border: 2px solid var(--ink); background: var(--card); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  .filter button.active { background: var(--ink); color: var(--card); }
+  .book-row { display: flex; gap: 12px; padding: 10px 4px; border-bottom: 1.5px dashed var(--muted); cursor: pointer; align-items: center; }
+  .book-row:last-child { border-bottom: none; }
+  .book-row:hover { background: var(--soft); }
+  .cover-md { width: 58px; height: 84px; object-fit: cover; border-radius: 4px; border: 2.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); flex-shrink: 0; }
+  .cover-md.ph { font-size: 11px; }
+  .book-info { flex: 1; min-width: 0; }
+  .book-title { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .book-author { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
+  .bar { height: 12px; background: var(--card); border: 2px solid var(--ink); border-radius: 99px; overflow: hidden; }
+  .bar > div { height: 100%; background: repeating-linear-gradient(-45deg, var(--yellow) 0 6px, var(--orange) 6px 12px); transition: width .4s; }
+  .bar.done > div { background: repeating-linear-gradient(-45deg, var(--green) 0 6px, #8fd56b 6px 12px); }
+  .bar.pts > div { background: repeating-linear-gradient(-45deg, var(--blue) 0 6px, #7fd3ff 6px 12px); }
+  .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .badge { font-size: 11px; padding: 1px 8px; border: 1.5px solid var(--ink); border-radius: 99px; background: var(--yellow); color: var(--sticker-ink); white-space: nowrap; }
+  .badge.done { background: var(--green); }
+  .badge.want { background: var(--purple); }
+  .empty-msg { text-align: center; color: var(--muted); padding: 26px 10px; font-size: 14px; line-height: 1.7; }
+  .welcome { padding: 14px; margin-bottom: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .welcome p { margin: 0; flex: 1 1 220px; line-height: 1.6; font-size: 14px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stat { border: 2.5px solid var(--ink); border-radius: var(--wob-s); padding: 12px 14px; color: var(--sticker-ink); box-shadow: 3px 3px 0 var(--ink); }
+  .stat:nth-child(1) { background: var(--yellow); } .stat:nth-child(2) { background: var(--red); color: #fff; }
+  .stat:nth-child(3) { background: var(--blue); } .stat:nth-child(4) { background: var(--green); }
+  .stat .v { font-family: var(--num); font-size: 38px; line-height: 1; }
+  .stat .l { font-size: 12px; }
+  .bars { display: flex; align-items: flex-end; gap: 5px; height: 150px; padding-top: 10px; border-bottom: 2.5px solid var(--ink); }
+  .bars .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+  .bars .col div.b { width: 100%; background: var(--yellow); border: 2px solid var(--ink); border-bottom: none; border-radius: 6px 8px 0 0; min-height: 3px; }
+  .bars .col.now div.b { background: var(--red); }
+  .bars .col em { font-size: 12px; font-style: normal; font-family: var(--num); }
+  .bar-labels { display: flex; gap: 5px; }
+  .bar-labels span { flex: 1; text-align: center; font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  /* companion tab */
+  .scene { position: relative; height: 290px; border: 2.5px solid var(--ink); border-radius: var(--wob); box-shadow: 4px 4px 0 var(--ink); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
+  .scene svg.pet { width: 250px; height: 270px; cursor: pointer; transform-origin: 50% 100%; }
+  .scene .say { position: absolute; top: 12px; left: 12px; right: 12px; text-align: center; }
+  .scene .say span { display: inline-block; background: #fffdf5; color: var(--sticker-ink); border: 2.5px solid #1d1d1b; border-radius: var(--wob); padding: 6px 14px; font-size: 14px; max-width: 100%; }
+  .pet-name { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 6px; flex-wrap: wrap; }
+  .pet-name h2 { margin: 0; font-size: 22px; display: flex; align-items: center; gap: 8px; }
+  .lv { font-family: var(--num); font-size: 18px; background: var(--purple); color: var(--sticker-ink); border: 2px solid var(--ink); border-radius: 999px; padding: 0 10px; }
+  .pts { font-family: var(--num); font-size: 26px; background: var(--yellow); color: var(--sticker-ink); border: 2.5px solid var(--ink); border-radius: var(--wob-s); padding: 0 12px; box-shadow: 2px 2px 0 var(--ink); white-space: nowrap; }
+  .pts small { font-family: var(--body); font-size: 12px; }
+  .roadmap { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin-top: 12px; text-align: center; }
+  .roadmap div { font-size: 11px; color: var(--muted); }
+  .roadmap svg { width: 100%; height: 64px; }
+  .roadmap .locked svg { filter: grayscale(1) brightness(1.3); opacity: .35; }
+  .roadmap .cur { color: var(--ink); font-weight: 700; }
+  .roadmap .cur svg { background: var(--soft); border-radius: 50%; }
+  .rules { margin: 8px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.8; color: var(--muted); }
+  .section-h { font-size: 17px; margin: 22px 0 8px; display: flex; align-items: center; gap: 8px; }
+  .section-h::after { content: ""; flex: 1; border-top: 2px dashed var(--muted); }
+  .shop-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .shop-tabs button { border: 2px solid var(--ink); background: var(--card); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  .shop-tabs button.active { background: var(--blue); color: var(--sticker-ink); font-weight: 700; }
+  .shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
+  .item { border: 2.5px solid var(--ink); border-radius: var(--wob-s); background: var(--card); padding: 8px; text-align: center; box-shadow: 3px 3px 0 var(--ink); display: flex; flex-direction: column; gap: 6px; }
+  .item.on { background: var(--soft); box-shadow: 3px 3px 0 var(--red); border-color: var(--red); }
+  .item .thumb { height: 92px; border-radius: 10px; border: 2px solid var(--ink); background: #fff9e8; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+  .item .thumb svg { width: 88px; height: 92px; }
+  .item .nm { font-size: 13px; font-weight: 700; }
+  .item .btn { padding: 5px 6px; font-size: 12px; box-shadow: 2px 2px 0 var(--ink); }
+  .item .lock { font-size: 11px; color: var(--muted); }
+
+  /* pet animations */
+  .pet .eyes { animation: blink 4.5s infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+  .pet.idle { animation: breathe 3s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: scale(1.025, .975); } }
+  .pet.hop { animation: hop .7s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes hop { 0% { transform: scale(1.1, .85); } 40% { transform: translateY(-34px) scale(.95, 1.08); } 70% { transform: scale(1.06, .92); } 100% { transform: none; } }
+  .pet .arm-r { transform-box: fill-box; transform-origin: 0% 100%; }
+  .pet.hop .arm-r { animation: wave .35s 2 ease-in-out; }
+  @keyframes wave { 50% { transform: rotate(-25deg); } }
+  .heart-pop { position: absolute; font-size: 22px; pointer-events: none; animation: rise 1s ease-out forwards; }
+  @keyframes rise { to { transform: translateY(-80px) scale(1.4); opacity: 0; } }
+
+  .overlay { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal { background: var(--card); width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; border: 2.5px solid var(--ink); border-bottom: none; border-radius: 22px 26px 0 0; padding: 18px 18px calc(26px + env(safe-area-inset-bottom, 0px)); animation: up .25s ease; }
+  @media (min-width: 600px) { .overlay { align-items: center; } .modal { border-bottom: 2.5px solid var(--ink); border-radius: var(--wob); box-shadow: 6px 6px 0 var(--ink); } }
+  @keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal h2 { margin: 0 0 12px; font-size: 20px; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-wrap: balance; }
+  .close { background: none; border: none; font-size: 28px; line-height: 1; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; font-weight: 700; }
+  input, textarea, select { width: 100%; padding: 9px 10px; border: 2px solid var(--ink); border-radius: var(--wob-s); font-size: 16px; font-family: inherit; background: var(--field); color: var(--ink); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 120px; min-width: 0; }
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1 1 120px; }
+  .quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
+  .hint a, .bk-link { color: var(--red); font-weight: 700; }
+  .preview { display: flex; gap: 12px; align-items: center; background: var(--soft); border: 2px dashed var(--ink); border-radius: var(--wob-s); padding: 10px; margin-top: 4px; }
+  .bk-link { display: inline-block; margin-top: 6px; font-size: 13px; text-decoration: none; }
+  .cover-pick { display: flex; gap: 12px; align-items: center; margin-top: 4px; }
+  .cover-pick .cover-md { cursor: pointer; }
+  .steps { margin: 6px 0 0; padding-left: 20px; line-height: 1.8; font-size: 14px; }
+
+  .detail-head { display: flex; gap: 14px; }
+  .cover-lg { width: 96px; height: 140px; object-fit: cover; border-radius: 5px; border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); flex-shrink: 0; }
+  .cover-lg.ph { font-size: 13px; }
+  .rating { font-size: 30px; color: var(--soft); user-select: none; -webkit-text-stroke: 1.5px var(--ink); }
+  .rating button { background: none; border: none; padding: 0 1px; font-size: inherit; color: inherit; }
+  .rating button.on { color: var(--yellow); }
+  .session { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1.5px dashed var(--muted); font-size: 14px; }
+  .session small { color: var(--muted); }
+  .session .del { background: none; border: none; color: var(--muted); font-size: 16px; }
+  .session .del:hover { color: var(--red); }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
+  .celebrate { text-align: center; }
+  .celebrate .stage-pet { height: 190px; display: flex; justify-content: center; }
+  .celebrate .stage-pet svg { width: 180px; height: 190px; }
+  .celebrate h2 { justify-content: center; font-size: 26px; }
+  .levelup { display: inline-block; background: var(--purple); color: var(--sticker-ink); border: 2.5px solid var(--ink); border-radius: var(--wob-s); padding: 6px 14px; margin: 6px 0; font-weight: 700; animation: pop .6s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { 0% { transform: scale(0) rotate(-20deg); } 100% { transform: none; } }
+  .celebrate .rating { font-size: 40px; }
+  .big-num { font-family: var(--num); font-size: 28px; color: var(--red); }
+  .toast { position: fixed; left: 50%; bottom: calc(156px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--yellow); color: var(--sticker-ink); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 8px 18px; border-radius: var(--wob-s); font-size: 14px; font-weight: 700; z-index: 120; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: calc(100% - 32px); text-align: center; }
+  .toast.show { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  @media (max-width: 480px) {
+    .month-title { font-size: 24px; }
+    .sync { display: none; }
+    .day { min-height: 92px; }
+    .covers { height: 54px; width: 38px; }
+    .covers img, .covers .ph { width: 34px; height: 50px; font-size: 8px; }
+    .dow div { font-size: 13px; }
+    .num { font-size: 19px; width: 28px; height: 28px; line-height: 30px; }
+    .day.today .num { line-height: 25px; }
+    .scene { height: 260px; }
+    .scene svg.pet { width: 220px; height: 240px; }
+  }
+
+  /* sign-in gate */
+  #gate { position: fixed; inset: 0; z-index: 200; background: var(--bg) var(--pattern); display: flex; align-items: center; justify-content: center; padding: 20px 16px; overflow: auto; }
+  .gate-card { width: min(420px, 100%); padding: 22px 22px 26px; text-align: center; }
+  .gate-card h1 { font-size: 26px; margin: 4px 0 10px; }
+  .gate-card p { line-height: 1.7; }
+  .gate-pet { height: 130px; display: flex; justify-content: center; }
+  .gate-pet svg { width: 130px; height: 130px; }
+  .gate-card .who { background: var(--soft); border: 2px dashed var(--ink); border-radius: var(--wob-s); padding: 6px 10px; word-break: break-all; font-weight: 700; }
+  .gate-msg { color: var(--red); font-weight: 700; }
+  .btn.big { font-size: 17px; padding: 12px 22px; margin: 6px 0; }
+  .spin { width: 36px; height: 36px; margin: 10px auto; border-radius: 50%; border: 4px solid var(--soft); border-top-color: var(--red); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  a.btn { text-decoration: none; display: inline-block; text-align: center; color: var(--sticker-ink); }
+  .acct { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; margin-bottom: 6px; }
+  .acct small { color: var(--muted); word-break: break-all; }
+  /* book search results */
+  .results { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; max-height: 300px; overflow-y: auto; }
+  .result { display: flex; gap: 10px; align-items: center; text-align: left; background: var(--card); border: 2px solid var(--ink); border-radius: var(--wob-s); padding: 6px 8px; }
+  .result:hover { background: var(--soft); }
+  .cover-sm { width: 38px; height: 54px; object-fit: cover; border-radius: 3px; border: 2px solid var(--ink); flex-shrink: 0; }
+  .ph.cover-sm { font-size: 8px; }
+  .r-info { display: flex; flex-direction: column; min-width: 0; }
+  .r-info b { font-size: 14px; }
+  .r-info small { color: var(--muted); font-size: 12px; }
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div id="gate" hidden></div>
+
+<canvas id="confetti"></canvas>
+<div class="app">
+  <header>
+    <div class="month-nav" id="monthNav">
+      <button class="icon-btn" id="prevM" aria-label="上個月">‹</button>
+      <div class="month-title" id="monthTitle"></div>
+      <button class="icon-btn" id="nextM" aria-label="下個月">›</button>
+    </div>
+    <div class="head-right">
+      <span class="sync" id="syncChip">連線中…</span>
+      <button class="icon-btn" id="todayBtn" title="回到本月">今</button>
+      <button class="icon-btn" id="menuBtn" aria-label="選單">☰</button>
+    </div>
+  </header>
+
+  <section id="view-calendar">
+    <div id="welcome"></div>
+    <div class="buddy" id="buddy"></div>
+    <div class="summary" id="monthSummary"></div>
+    <div class="calendar sticker">
+      <div class="dow"><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div class="sun">日</div></div>
+      <div id="weeks"></div>
+    </div>
+  </section>
+
+  <section id="view-shelf" hidden>
+    <div class="panel sticker">
+      <div class="filter" id="shelfFilter">
+        <button data-f="all" class="active">全部</button>
+        <button data-f="reading">閱讀中</button>
+        <button data-f="want">想讀</button>
+        <button data-f="done">已讀完</button>
+      </div>
+      <div id="shelfList"></div>
+    </div>
+  </section>
+
+  <section id="view-pet" hidden>
+    <div id="petView"></div>
+  </section>
+
+  <section id="view-stats" hidden>
+    <div class="panel sticker">
+      <div class="stat-grid" id="statGrid"></div>
+      <h3 style="margin:6px 0 0; font-size:16px">近 12 個月閱讀頁數</h3>
+      <div class="bars" id="monthBars"></div>
+      <div class="bar-labels" id="barLabels"></div>
+    </div>
+  </section>
+</div>
+
+<button class="fab" id="fab" aria-label="新增書籍">＋</button>
+<nav class="tabs">
+  <button data-view="calendar" class="active"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="fillme" d="M5 8c0-1 1-2 2-2h18c1 0 2 1 2 2v17c0 1-1 2-2 2H7c-1 0-2-1-2-2z"/><path d="M5 13h22M11 3v6M21 3v6M11 19h2M18 19h2M11 23h2"/></svg>日曆</button>
+  <button data-view="shelf"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="fillme" d="M5 6h6v21H5zM12 9h6v18h-6z"/><path d="M19.5 10.5l5.5-1.5 4 17-5.5 1.5z"/><path d="M5 11h6M12 14h6"/></svg>書櫃</button>
+  <button data-view="pet"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="fillme" d="M16 5c7 0 11 6 11 13 0 6-4 9-11 9S5 24 5 18C5 11 9 5 16 5z"/><circle cx="12" cy="15" r="1.6" fill="currentColor"/><circle cx="20" cy="15" r="1.6" fill="currentColor"/><path d="M13 20q3 3 6 0"/></svg>夥伴</button>
+  <button data-view="stats"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="fillme" d="M6 27V17h5v10zM14 27V9h5v18zM22 27V13h5v14z"/><path d="M3 27h26"/></svg>統計</button>
+</nav>
+
+<div class="overlay" id="overlay" hidden><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<div class="overlay" id="confirmBox" hidden style="z-index:60"><div class="modal" style="max-width:400px">
+  <h2 id="confirmMsg" style="font-size:17px; line-height:1.5"></h2>
+  <div class="btn-row"><button class="btn ghost" id="confirmNo">取消</button><button class="btn primary" id="confirmYes">確定</button></div>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<input type="file" id="coverFile" accept="image/*" hidden>
+
+<script>
+/* ============ 小工具 ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const stars = n => '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400); }
+function askConfirm(msg) {
+  return new Promise(res => {
+    $('#confirmMsg').textContent = msg; $('#confirmBox').hidden = false;
+    const done = v => { $('#confirmBox').hidden = true; res(v); };
+    $('#confirmYes').onclick = () => done(true); $('#confirmNo').onclick = () => done(false);
+  });
+}
+
+/* ============ 夥伴角色：成長階段與道具 ============ */
+const STAGES = [
+  { need: 0, name: '神秘蛋蛋' }, { need: 1, name: '書蟲寶寶' }, { need: 3, name: '小書蟲' },
+  { need: 6, name: '閱讀小勇士' }, { need: 10, name: '書海探險家' }, { need: 20, name: '閱讀大魔王' },
+];
+const SLOTS = [['color', '顏色'], ['hat', '帽子'], ['glasses', '眼鏡'], ['held', '手拿'], ['bg', '背景']];
+const ITEMS = {
+  c_yellow: { slot: 'color', name: '檸檬黃', price: 0, hex: '#ffd23f' },
+  c_red:    { slot: 'color', name: '番茄紅', price: 40, hex: '#ff5a3c' },
+  c_blue:   { slot: 'color', name: '天空藍', price: 40, hex: '#2fb8ff' },
+  c_green:  { slot: 'color', name: '草地綠', price: 40, hex: '#6cc04a' },
+  c_orange: { slot: 'color', name: '橘子橘', price: 60, hex: '#ff8a1f' },
+  c_purple: { slot: 'color', name: '葡萄紫', price: 60, hex: '#9b8bd6' },
+  c_pink:   { slot: 'color', name: '草莓粉', price: 60, hex: '#ff8fb1' },
+  h_flower: { slot: 'hat', name: '小花', price: 40 },
+  h_bow:    { slot: 'hat', name: '蝴蝶結', price: 60 },
+  h_party:  { slot: 'hat', name: '派對帽', price: 80 },
+  h_beanie: { slot: 'hat', name: '毛線帽', price: 100 },
+  h_crown:  { slot: 'hat', name: '閃亮皇冠', price: 200, stage: 3 },
+  g_round:  { slot: 'glasses', name: '圓框眼鏡', price: 60 },
+  g_heart:  { slot: 'glasses', name: '愛心眼鏡', price: 90 },
+  g_sun:    { slot: 'glasses', name: '酷酷墨鏡', price: 120, stage: 2 },
+  i_balloon:{ slot: 'held', name: '紅氣球', price: 70 },
+  i_boba:   { slot: 'held', name: '珍珠奶茶', price: 90 },
+  i_wand:   { slot: 'held', name: '星星魔杖', price: 150, stage: 2 },
+  bg_plain: { slot: 'bg', name: '奶油紙', price: 0 },
+  bg_grass: { slot: 'bg', name: '小草地', price: 60 },
+  bg_hearts:{ slot: 'bg', name: '愛心雨', price: 80 },
+  bg_library:{ slot: 'bg', name: '圖書館', price: 120, stage: 1 },
+  bg_night: { slot: 'bg', name: '星空', price: 150, stage: 2 },
+};
+const svgBg = (fill, body) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'>${body}</svg>`)}") ${fill}`;
+const BGS = {
+  bg_plain: svgBg('#fff9e8', `<g fill='none' stroke='#1d1d1b' stroke-width='2' stroke-linecap='round' opacity='.12'><path d='M10 20q6-8 12 0t12 0'/><circle cx='80' cy='70' r='6'/><path d='M30 90l8 8M38 90l-8 8'/></g>`),
+  bg_grass: svgBg('#d9f2c6', `<g fill='none' stroke='#3f8a2a' stroke-width='2.4' stroke-linecap='round'><path d='M14 104q2-12 0-18M20 104q-2-10 4-16'/><path d='M80 110q2-12 0-18M86 110q-2-10 4-16'/></g><circle cx='50' cy='40' r='5' fill='#fff' stroke='#1d1d1b' stroke-width='2'/><circle cx='50' cy='40' r='2' fill='#ffd23f'/>`),
+  bg_hearts: svgBg('#ffe3ea', `<path d='M30 38c-6-8-18-2-10 8l10 10 10-10c8-10-4-16-10-8z' fill='#ff8fb1' stroke='#1d1d1b' stroke-width='2'/><path d='M90 92c-4-6-13-1-7 6l7 7 7-7c6-7-3-12-7-6z' fill='#ff5a3c' stroke='#1d1d1b' stroke-width='2'/>`),
+  bg_library: svgBg('#f3e1c4', `<path d='M0 60h120M0 118h120' stroke='#1d1d1b' stroke-width='3'/><g stroke='#1d1d1b' stroke-width='2'><rect x='8' y='24' width='12' height='36' fill='#ff5a3c'/><rect x='22' y='30' width='10' height='30' fill='#2fb8ff'/><rect x='34' y='20' width='14' height='40' fill='#6cc04a'/><rect x='70' y='82' width='12' height='36' fill='#ffd23f'/><rect x='84' y='88' width='10' height='30' fill='#9b8bd6'/><rect x='96' y='78' width='14' height='40' fill='#ff8a1f'/></g>`),
+  bg_night: svgBg('#2b2d6e', `<path d='M30 30l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z' fill='#ffd23f'/><circle cx='90' cy='80' r='2.5' fill='#fff'/><circle cx='20' cy='100' r='2' fill='#fff'/><path d='M96 22a10 10 0 1 0 8 16a8 8 0 1 1-8-16z' fill='#fff3b0'/>`),
+};
+const defaultPet = () => ({ name: '', spent: 0, owned: ['c_yellow', 'bg_plain'], eq: { color: 'c_yellow', hat: null, glasses: null, held: null, bg: 'bg_plain' } });
+let pet = defaultPet();
+
+const INK = '#1d1d1b';
+const heartPath = (cx, cy, s) => `M${cx} ${cy + s * .9}C${cx - s * 1.6} ${cy - s * .1} ${cx - s * .8} ${cy - s * 1.2} ${cx} ${cy - s * .35}C${cx + s * .8} ${cy - s * 1.2} ${cx + s * 1.6} ${cy - s * .1} ${cx} ${cy + s * .9}Z`;
+const starPath = (cx, cy, r) => { let d = ''; for (let i = 0; i < 10; i++) { const a = Math.PI / 5 * i - Math.PI / 2, rr = i % 2 ? r * .45 : r; d += (i ? 'L' : 'M') + (cx + Math.cos(a) * rr).toFixed(1) + ' ' + (cy + Math.sin(a) * rr).toFixed(1); } return d + 'Z'; };
+const S = `stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
+
+function hatSVG(id) {
+  switch (id) {
+    case 'h_party': return `<path d="M78 50 L100 2 L122 50 Z" fill="#2fb8ff" ${S}/><path d="M89 26 L111 26 M84 38 L116 38" ${S} fill="none"/><circle cx="100" cy="2" r="7" fill="#ffd23f" ${S}/>`;
+    case 'h_crown': return `<path d="M70 52 L73 16 L88 32 L100 6 L112 32 L127 16 L130 52 Z" fill="#ffd23f" ${S}/><circle cx="100" cy="40" r="5" fill="#ff5a3c" ${S} stroke-width="3"/><circle cx="82" cy="44" r="3.5" fill="#2fb8ff" ${S} stroke-width="3"/><circle cx="118" cy="44" r="3.5" fill="#6cc04a" ${S} stroke-width="3"/>`;
+    case 'h_beanie': return `<path d="M62 58 C 60 14, 140 14, 138 58 Z" fill="#ff5a3c" ${S}/><rect x="58" y="46" width="84" height="15" rx="7" fill="#fbf6e6" ${S}/><circle cx="100" cy="16" r="9" fill="#fbf6e6" ${S}/>`;
+    case 'h_bow': return `<path d="M134 50 L112 36 L114 66 Z" fill="#ff8fb1" ${S}/><path d="M134 50 L156 36 L154 66 Z" fill="#ff8fb1" ${S}/><circle cx="134" cy="51" r="7" fill="#ff5a3c" ${S}/>`;
+    case 'h_flower': { let p = ''; for (let i = 0; i < 5; i++) { const a = i * 72 * Math.PI / 180; p += `<circle cx="${(128 + Math.cos(a) * 11).toFixed(1)}" cy="${(46 + Math.sin(a) * 11).toFixed(1)}" r="8" fill="#fff" ${S} stroke-width="3"/>`; } return p + `<circle cx="128" cy="46" r="7" fill="#ffd23f" ${S} stroke-width="3"/><path d="M122 58 q-6 8 -16 6" fill="none" ${S} stroke-width="3"/>`; }
+  }
+  return '';
+}
+function glassesSVG(id) {
+  switch (id) {
+    case 'g_round': return `<g fill="rgba(255,255,255,.3)" ${S} stroke-width="3.5"><circle cx="78" cy="100" r="18"/><circle cx="122" cy="100" r="18"/></g><path d="M96 99 Q100 94 104 99 M60 98 L36 92 M140 98 L164 92" fill="none" ${S} stroke-width="3.5"/>`;
+    case 'g_sun': return `<rect x="56" y="88" width="42" height="26" rx="11" fill="${INK}"/><rect x="102" y="88" width="42" height="26" rx="11" fill="${INK}"/><path d="M96 98 L104 98 M56 96 L36 90 M144 96 L164 90" ${S} stroke-width="3.5"/><path d="M64 94 l8 0 M110 94 l8 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+    case 'g_heart': return `<path d="${heartPath(78, 100, 16)}" fill="#ff5a3c" fill-opacity=".85" ${S} stroke-width="3.5"/><path d="${heartPath(122, 100, 16)}" fill="#ff5a3c" fill-opacity=".85" ${S} stroke-width="3.5"/><path d="M95 98 L105 98" ${S} stroke-width="3.5"/>`;
+  }
+  return '';
+}
+function heldSVG(id, stage) {
+  if (id === 'i_balloon') return `<path d="M186 106 Q 180 70 192 46" fill="none" ${S} stroke-width="2.5"/><ellipse cx="194" cy="28" rx="17" ry="21" fill="#ff5a3c" ${S}/><path d="M188 20 q3 -6 8 -6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+  if (id === 'i_boba') return `<path d="M174 92 L200 92 L196 130 L178 130 Z" fill="#f5d7a1" ${S}/><path d="M190 92 L196 70" ${S} stroke-width="5"/><circle cx="182" cy="122" r="3" fill="${INK}"/><circle cx="190" cy="124" r="3" fill="${INK}"/><circle cx="186" cy="116" r="3" fill="${INK}"/><path d="M172 92 L202 92" ${S}/>`;
+  if (id === 'i_wand') return `<path d="M186 110 L198 68" ${S} stroke-width="4.5"/><path d="${starPath(200, 58, 16)}" fill="#ffd23f" ${S} stroke-width="3.5"/>`;
+  if (stage >= 3) return `<g transform="rotate(-14 16 110)"><rect x="0" y="98" width="30" height="24" rx="3" fill="#2fb8ff" ${S} stroke-width="3.5"/><path d="M15 98 v24" ${S} stroke-width="3"/></g>`;
+  return '';
+}
+function petSVG(stage, eq = pet.eq, opts = {}) {
+  const C = ITEMS[eq.color]?.hex || '#ffd23f';
+  const cls = opts.cls ?? 'pet idle';
+  if (stage === 0) {
+    return `<svg class="${cls}" viewBox="-10 -10 220 240" aria-hidden="true">
+      <g transform="translate(0 6)">
+        <path d="M100 70 C 138 70, 152 130, 150 162 C 148 194, 124 210, 100 210 C 76 210, 52 194, 50 162 C 48 130, 62 70, 100 70Z" fill="#fff9e8" ${S}/>
+        <circle cx="80" cy="168" r="10" fill="${C}" ${S} stroke-width="3"/><circle cx="124" cy="182" r="7" fill="${C}" ${S} stroke-width="3"/><circle cx="120" cy="104" r="6" fill="${C}" ${S} stroke-width="3"/>
+        <path d="M54 138 l12 -8 l10 10 l12 -10 l12 10 l12 -10 l12 10 l12 -8" fill="none" ${S} stroke-width="3.5"/>
+        <g class="eyes"><circle cx="88" cy="122" r="4.5" fill="${INK}"/><circle cx="112" cy="122" r="4.5" fill="${INK}"/></g>
+        <g transform="translate(0 30)">${hatSVG(eq.hat)}</g>
+      </g></svg>`;
+  }
+  const sc = [0, .62, .74, .85, .94, 1][stage];
+  const happy = opts.mood === 'happy';
+  const sunglasses = eq.glasses === 'g_sun';
+  return `<svg class="${cls}" viewBox="-10 -10 230 240" aria-hidden="true">
+    ${stage >= 5 ? `<path d="${starPath(18, 40, 10)}" fill="#ffd23f" ${S} stroke-width="3"/><path d="${starPath(196, 150, 8)}" fill="#ff8fb1" ${S} stroke-width="3"/><path d="${starPath(10, 160, 7)}" fill="#2fb8ff" ${S} stroke-width="3"/>` : ''}
+    <g transform="translate(100 222) scale(${sc}) translate(-100 -222)">
+      ${stage >= 3 ? `<path d="M82 196 L80 214 M118 196 L120 214" ${S}/><ellipse cx="76" cy="216" rx="12" ry="6.5" fill="#ff5a3c" ${S} stroke-width="3.5"/><ellipse cx="124" cy="216" rx="12" ry="6.5" fill="#ff5a3c" ${S} stroke-width="3.5"/>` : ''}
+      ${stage >= 2 ? `<path d="M36 140 C 22 138, 12 126, 16 112" fill="none" ${S}/><circle cx="16" cy="108" r="7" fill="${C}" ${S} stroke-width="3.5"/>` : ''}
+      <path d="M100 40 C 152 37, 172 82, 170 132 C 168 178, 140 202, 100 201 C 58 202, 29 178, 31 130 C 32 82, 50 43, 100 40 Z" fill="${C}" ${S}/>
+      ${stage >= 4 ? `<path d="M90 42 q-6 -16 4 -24 M102 40 q2 -18 12 -20 M80 48 q-10 -8 -8 -18" fill="none" ${S}/>` : ''}
+      <ellipse cx="62" cy="126" rx="10" ry="6" fill="#ff8fb1" opacity=".75"/><ellipse cx="138" cy="126" rx="10" ry="6" fill="#ff8fb1" opacity=".75"/>
+      ${sunglasses ? '' : `<g class="eyes"><circle cx="78" cy="100" r="14" fill="#fff" ${S} stroke-width="3.5"/><circle cx="122" cy="100" r="14" fill="#fff" ${S} stroke-width="3.5"/>
+        <circle cx="${happy ? 78 : 81}" cy="${happy ? 98 : 102}" r="6" fill="${INK}"/><circle cx="${happy ? 122 : 125}" cy="${happy ? 98 : 102}" r="6" fill="${INK}"/></g>`}
+      ${happy ? `<path d="M82 128 Q100 156 118 128 Z" fill="#ff5a3c" ${S} stroke-width="3.5"/>` : `<path d="M86 130 Q100 144 114 130" fill="none" ${S}/>`}
+      ${glassesSVG(eq.glasses)}
+      ${stage >= 2 ? `<g class="arm-r"><path d="M164 140 C 178 138, 188 126, 184 112" fill="none" ${S}/><circle cx="185" cy="108" r="7" fill="${C}" ${S} stroke-width="3.5"/></g>` : ''}
+      ${heldSVG(eq.held, stage)}
+      ${hatSVG(eq.hat)}
+    </g></svg>`;
+}
+
+/* ============ 資料層：用 Google 帳號登入，資料存在 Firestore（每個學生一份，老師在後台看得到）；
+   直接雙擊檔案（file://）打開時不用登入，資料只存在這台電腦的瀏覽器 ============
+   Firestore 裡的樣子（規則在 ../firebase/firestore.rules）：
+     rtStudents/{email}            { no, name, at }        老師在後台加入的學生名單
+     rtUsers/{email}               { pet, sum, at }        夥伴、給老師看的統計（sum）
+     rtUsers/{email}/books/{id}    一本書
+     rtUsers/{email}/sessions/{id} 一筆閱讀紀錄 */
+let db = { books: [], sessions: [] };
+let mode = 'loading';            // 'cloud' | 'local'
+let loaded = { books: false, sessions: false, user: false };
+let userRef = null, booksCol = null, sessCol = null;
+const LOCAL_KEY = 'reading-tracker-v1';
+const FB_ON = typeof FB_CONFIG !== 'undefined' && !!FB_CONFIG && /^https?:$/.test(location.protocol);
+const me = { auth: null, fs: null, email: '', name: '', no: '', admin: false };
+const lower = s => String(s || '').trim().toLowerCase();
+const clean = o => JSON.parse(JSON.stringify(o));   // Firestore 不收 undefined
+
+function loadLocal() {
+  try { const d = JSON.parse(localStorage.getItem(LOCAL_KEY)); if (d) return d; } catch {}
+  return { books: [], sessions: [] };
+}
+function saveLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ ...db, pet })); } catch { toast('這個瀏覽器不允許儲存資料'); } }
+function normPet(p) { const d = defaultPet(); if (!p) return d; return { ...d, ...p, owned: [...new Set([...d.owned, ...(p.owned || [])])], eq: { ...d.eq, ...(p.eq || {}) } }; }
+
+function fbErr(e) {
+  const c = (e && e.code) || '';
+  return { 'permission-denied': '沒有權限', unavailable: '連不上網路', 'resource-exhausted': '超過今天的免費用量' }[c] || (e && e.message) || String(e);
+}
+function writeErr(e) { toast('沒有存到雲端：' + fbErr(e)); setSync('⚠ 沒有存到雲端'); }
+function putBook(b) {
+  const i = db.books.findIndex(x => x.id === b.id);
+  if (i < 0) db.books.push(b); else db.books[i] = b;
+  if (mode === 'cloud') { booksCol.doc(b.id).set(clean(b)).catch(writeErr); return saveUserSoon(); }
+  saveLocal();
+}
+function delBook(id) {
+  const ss = db.sessions.filter(s => s.bookId === id);
+  db.books = db.books.filter(b => b.id !== id); db.sessions = db.sessions.filter(s => s.bookId !== id);
+  if (mode === 'cloud') {
+    const batch = me.fs.batch();
+    batch.delete(booksCol.doc(id)); ss.forEach(s => batch.delete(sessCol.doc(s.id)));
+    batch.commit().catch(writeErr); return saveUserSoon();
+  }
+  saveLocal();
+}
+function putSession(s) {
+  const i = db.sessions.findIndex(x => x.id === s.id);
+  if (i < 0) db.sessions.push(s); else db.sessions[i] = s;
+  if (mode === 'cloud') { sessCol.doc(s.id).set(clean(s)).catch(writeErr); return saveUserSoon(); }
+  saveLocal();
+}
+function delSession(id) {
+  db.sessions = db.sessions.filter(s => s.id !== id);
+  if (mode === 'cloud') { sessCol.doc(id).delete().catch(writeErr); return saveUserSoon(); }
+  saveLocal();
+}
+function savePet() {
+  if (mode === 'cloud') return saveUserSoon();
+  saveLocal();
+}
+
+/* 給老師看的統計：每天讀幾頁、幾分鐘、讀完哪些書、正在讀哪些書 */
+function buildSum() {
+  const dp = {}, dm = {};
+  db.sessions.forEach(s => {
+    dp[s.date] = (dp[s.date] || 0) + readPages(s);
+    if (+s.minutes) dm[s.date] = (dm[s.date] || 0) + +s.minutes;
+  });
+  const done = db.books.filter(b => b.status === 'done').map(b => ({ t: b.title, a: b.author || '', d: b.finishedAt || '', r: b.rating || 0, n: b.totalPages }))
+    .sort((a, b) => b.d.localeCompare(a.d));
+  const reading = db.books.filter(b => b.status === 'reading').map(b => ({ t: b.title, p: currentPage(b), n: b.totalPages }));
+  return { dp, dm, done, reading, want: db.books.filter(b => b.status === 'want').length,
+    stage: stageOf(finishedCount()), pet: petName(), points: balance(), color: pet.eq.color };
+}
+let lastUserJson = '', userTimer = 0;
+function saveUserSoon() { clearTimeout(userTimer); userTimer = setTimeout(saveUser, 800); }
+function saveUser() {
+  if (mode !== 'cloud' || !isReady()) return;
+  const body = clean({ pet, sum: buildSum() }), json = JSON.stringify(body);
+  if (json === lastUserJson) return;
+  lastUserJson = json;
+  setSync('☁ 儲存中…');
+  userRef.set({ ...body, at: Date.now() }).then(() => setSync('☁ 已同步'), e => { lastUserJson = ''; writeErr(e); });
+}
+
+const isReady = () => mode === 'local' || (mode === 'cloud' && loaded.books && loaded.sessions && loaded.user);
+function needReady() { if (isReady()) return true; toast('資料載入中，請稍候幾秒再試'); return false; }
+let rq = 0;
+function scheduleRender() { if (rq) return; rq = requestAnimationFrame(() => { rq = 0; render(); }); }
+function afterLoad() {
+  if (!isReady()) return;
+  scheduleRender();
+  saveUserSoon();   // 統計和資料不一樣時（例如換了新版網頁）順便更新
+}
+function setSync(t) { $('#syncChip').textContent = t; }
+
+function startLocal() {
+  mode = 'local';
+  const d = loadLocal();
+  db = { books: d.books || [], sessions: d.sessions || [] }; pet = normPet(d.pet);
+  setSync('只存在此裝置');
+  render();
+}
+
+/* ---------- 登入 ---------- */
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('載入失敗')); document.head.append(s); });
+}
+async function start() {
+  if (!FB_ON) return startLocal();
+  gate('loading');
+  try {
+    for (const f of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js']) await loadScript(FB_SDK + f);
+    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+    me.auth = firebase.auth(); me.fs = firebase.firestore();
+    try { await me.fs.enablePersistence({ synchronizeTabs: true }); } catch {}
+  } catch { return gate('error', '登入服務載入失敗，請檢查網路，再重新整理網頁。'); }
+  let started = false;
+  me.auth.onAuthStateChanged(async u => {
+    if (started) { if (!u || lower(u.email) !== me.email) location.reload(); return; }   // 別的分頁登出或換帳號
+    if (!u) return gate('login');
+    gate('loading', '正在確認你的身分…');
+    try {
+      me.email = lower(u.email);
+      const w = await who(me.email);
+      if (!w.roster && !w.admin) return gate('denied');
+      Object.assign(me, { name: w.roster?.name || u.displayName || '', no: w.roster?.no ?? '', admin: w.admin });
+      started = true;
+      startCloud();
+      gate(null);
+    } catch (e) { gate('error', '讀不到雲端資料（' + fbErr(e) + '），請重新整理網頁。'); }
+  });
+}
+async function get(path) {
+  try { const s = await me.fs.doc(path).get(); return s.exists ? s.data() : null; }
+  catch (e) { if (e.code === 'permission-denied') return null; throw e; }
+}
+// 在學生名單上，或是班級百寶箱的擁有者／管理者（老師可以自己試用）
+async function who(email) {
+  const roster = await get('rtStudents/' + email);
+  const owner = await get('config/owner');
+  let admin = !!owner && lower(owner.email) === email;
+  if (!admin) { const m = await get('members/' + email); admin = !!m && m.role === 'admin'; }
+  return { roster, admin };
+}
+function startCloud() {
+  mode = 'cloud';
+  userRef = me.fs.doc('rtUsers/' + me.email);
+  booksCol = userRef.collection('books'); sessCol = userRef.collection('sessions');
+  const fail = e => { setSync('⚠ 同步中斷'); toast('雲端同步中斷了（' + fbErr(e) + '），請重新整理網頁。'); };
+  booksCol.onSnapshot(s => { db.books = s.docs.map(d => ({ ...d.data(), id: d.id })); loaded.books = true; afterLoad(); }, fail);
+  sessCol.onSnapshot(s => { db.sessions = s.docs.map(d => ({ ...d.data(), id: d.id })); loaded.sessions = true; afterLoad(); }, fail);
+  userRef.onSnapshot(s => {
+    const d = s.data();
+    pet = normPet(d && d.pet);
+    if (d && !s.metadata.hasPendingWrites) lastUserJson = JSON.stringify(clean({ pet: d.pet, sum: d.sum }));
+    loaded.user = true; afterLoad();
+  }, fail);
+  setSync('☁ 已同步');
+}
+async function logout() {
+  clearTimeout(userTimer); saveUser();
+  gate('loading', '正在登出…');
+  await Promise.race([me.fs.waitForPendingWrites().catch(() => {}), new Promise(r => setTimeout(r, 4000))]);
+  try { await me.auth.signOut(); } catch {}
+  try { await me.fs.terminate(); await me.fs.clearPersistence(); } catch {}   // 公用電腦：清掉暫存的資料
+  location.reload();
+}
+async function signIn() {
+  const p = new firebase.auth.GoogleAuthProvider();
+  p.setCustomParameters({ prompt: 'select_account' });   // 每次都讓人選帳號（學校電腦大家共用）
+  try { await me.auth.signInWithPopup(p); }
+  catch (e) {
+    const c = (e && e.code) || '';
+    if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return;
+    gateMsg(c === 'auth/popup-blocked' ? '瀏覽器擋住了登入視窗：請允許這個網站開啟彈出視窗，再按一次登入。'
+      : c === 'auth/unauthorized-domain' ? '這個網址還沒加進 Firebase 的授權網域。' : '登入失敗：' + fbErr(e));
+  }
+}
+function gate(kind, msg) {
+  const el = $('#gate');
+  if (!kind) { el.hidden = true; return; }
+  el.hidden = false;
+  const egg = petSVG(0, defaultPet().eq, { cls: 'pet idle' });
+  const body = {
+    loading: `<div class="spin"></div><p>${esc(msg || '正在連線…')}</p>`,
+    login: `<p>用學校給你的 Google 帳號登入，<br>你的書櫃和夥伴在哪一台電腦都看得到。</p>
+      <button class="btn primary big" id="gLogin">用 Google 帳號登入</button>
+      <p class="hint">老師把你加進班級名單後才能使用。</p>`,
+    denied: `<p class="who">${esc(me.email)}</p>
+      <p>這個帳號還沒有加入班級。<br>請把上面的 email 告訴老師，老師加好之後按「重新整理」。</p>
+      <div class="btn-row"><button class="btn" id="gOther">換一個帳號</button><button class="btn primary" onclick="location.reload()">重新整理</button></div>`,
+    error: `<p>${esc(msg || '發生錯誤')}</p><button class="btn primary" onclick="location.reload()">重新整理</button>`,
+  }[kind];
+  el.innerHTML = `<div class="gate-card sticker"><div class="gate-pet">${egg}</div><h1>我的閱讀日曆</h1>${body}<p class="gate-msg" hidden></p></div>`;
+  if ($('#gLogin')) $('#gLogin').onclick = signIn;
+  if ($('#gOther')) $('#gOther').onclick = signIn;
+}
+function gateMsg(t) { const m = $('#gate .gate-msg'); if (m) { m.textContent = t; m.hidden = false; } else toast(t); }
+
+const bookById = id => db.books.find(b => b.id === id);
+const sessionsOf = id => db.sessions.filter(s => s.bookId === id).sort((a, b) => a.date.localeCompare(b.date) || a.toPage - b.toPage);
+const currentPage = b => Math.max(0, ...sessionsOf(b.id).map(s => s.toPage));
+const readPages = s => Math.max(0, s.toPage - s.fromPage);
+
+/* 積分與成長 */
+const finishedCount = () => db.books.filter(b => b.status === 'done').length;
+const stageOf = n => STAGES.reduce((st, s, i) => n >= s.need ? i : st, 0);
+function earned() {
+  const pages = db.sessions.reduce((a, s) => a + readPages(s), 0);
+  return Math.floor(pages / 10) + 2 * new Set(db.sessions.map(s => s.date)).size + 30 * finishedCount();
+}
+const balance = () => Math.max(0, earned() - (pet.spent || 0));
+const petName = () => pet.name || STAGES[stageOf(finishedCount())].name;
+
+/* ============ 博客來 ============ */
+function parseBooksUrl(url) {
+  const m = String(url).match(/books\.com\.tw\/(?:exep\/assp\.php\/[^/]+\/)?products\/([0-9A-Z]{10})/i) || String(url).match(/[?&]item=([0-9A-Z]{10})/i);
+  return m ? m[1].toUpperCase() : null;
+}
+const booksSearchUrl = q => `https://search.books.com.tw/search/query/key/${encodeURIComponent(q)}/cat/all`;
+// 博客來封面圖的位置可以從商品編號推出來，例：0010984637 → img/001/098/46/0010984637.jpg
+const booksCover = id => `https://www.books.com.tw/img/${id.slice(0, 3)}/${id.slice(3, 6)}/${id.slice(6, 8)}/${id}.jpg`;
+const booksCoverAlt = id => `https://im1.book.com.tw/image/getImage?i=${encodeURIComponent(booksCover(id))}&w=348&h=348`;
+
+/* 封面：博客來或 Google Books 的圖、上傳的照片；沒有或載入失敗就用塗鴉色塊 */
+const palette = ['#ff5a3c', '#ffd23f', '#2fb8ff', '#6cc04a', '#9b8bd6', '#ff8a1f', '#ff8fb1'];
+function phHTML(b, cls, style) {
+  const t = b.title || '新書';
+  const color = palette[[...t].reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length];
+  return `<div class="ph ${cls}" style="background:${color};${style}">${esc(t.slice(0, 10))}</div>`;
+}
+function coverHTML(b, cls = '', style = '') {
+  const c = b.cover || '';
+  if (!/^(data:image\/|https:\/\/)/.test(c)) return phHTML(b, cls, style);
+  const id = b.booksUrl && parseBooksUrl(b.booksUrl);
+  const alt = id && c.includes('books.com.tw/img/') ? booksCoverAlt(id) : '';
+  return `<img class="${cls}" style="${style}" src="${esc(c)}" alt="" referrerpolicy="no-referrer" loading="lazy" data-alt="${esc(alt)}" data-ph="${esc(phHTML(b, cls, style))}" onerror="coverFail(this)">`;
+}
+function coverFail(img) {
+  if (img.dataset.alt && img.src !== img.dataset.alt) { img.src = img.dataset.alt; img.dataset.alt = ''; return; }
+  img.outerHTML = img.dataset.ph;
+}
+function shrinkImage(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const w = 220, h = Math.round(img.height * w / img.width);
+      const c = document.createElement('canvas'); c.width = w; c.height = Math.min(h, 360);
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(c.toDataURL('image/jpeg', .78));
+    };
+    img.onerror = rej;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* ============ 畫面 ============ */
+let view = 'calendar';
+let cur = new Date(); cur.setDate(1);
+let shelfFilter = 'all';
+let shopSlot = 'color';
+
+function render() {
+  $('#monthNav').style.visibility = view === 'calendar' ? 'visible' : 'hidden';
+  $('#todayBtn').hidden = view !== 'calendar';
+  ['calendar', 'shelf', 'pet', 'stats'].forEach(v => $('#view-' + v).hidden = v !== view);
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  if (view === 'calendar') renderCalendar();
+  if (view === 'shelf') renderShelf();
+  if (view === 'pet') renderPet();
+  if (view === 'stats') renderStats();
+}
+function goView(v) { view = v; render(); scrollTo(0, 0); }
+
+function buddyLine() {
+  const today = db.sessions.filter(s => s.date === todayStr()).reduce((a, s) => a + readPages(s), 0);
+  const n = finishedCount(), st = stageOf(n), next = STAGES[st + 1];
+  const lines = [];
+  if (!db.books.length) return '嗨！我是你的閱讀夥伴，加一本書，我們一起開始吧！';
+  if (today) lines.push(`今天讀了 <b>${today}</b> 頁，好棒！我覺得自己又長大一點了～`);
+  else lines.push('今天還沒讀書喔～一起讀 <b>10</b> 頁好不好？');
+  if (next) lines.push(`再讀完 <b>${next.need - n}</b> 本書，我就會變成「${next.name}」！`);
+  lines.push(`你有 <b>${balance()}</b> 積分，可以幫我買新衣服嗎？`);
+  return today ? lines[0] : pick(lines);
+}
+
+function renderCalendar() {
+  const y = cur.getFullYear(), m = cur.getMonth();
+  $('#monthTitle').innerHTML = `${y}年<span>${m + 1}</span>月`;
+  const ready = mode !== 'loading' && loaded.books && loaded.sessions;
+  $('#welcome').innerHTML = ready && !db.books.length ? `<div class="welcome sticker">
+      <p><b>歡迎使用閱讀日曆！</b><br>按右下角 ＋ 加入正在讀的書，每次讀完記下頁數，日曆上就會貼上書的封面，你的夥伴也會跟著長大。</p>
+      <button class="btn yellow small" id="wDemo">先看範例資料</button></div>` : '';
+  if ($('#wDemo')) $('#wDemo').onclick = loadDemo;
+  const bst = stageOf(finishedCount());
+  $('#buddy').innerHTML = ready ? `<div class="mini" style="--z:${[1.15, 1.45, 1.3, 1.15, 1.05, 1][bst]}">${petSVG(bst, pet.eq, { cls: 'pet' })}</div><div class="bubble">${buddyLine()}</div>` : '';
+  $('#buddy').onclick = () => goView('pet');
+
+  const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7;
+  const prefix = `${y}-${pad(m + 1)}`;
+  const ms = db.sessions.filter(s => s.date.startsWith(prefix));
+  const pages = ms.reduce((a, s) => a + readPages(s), 0);
+  const finished = db.books.filter(b => b.finishedAt?.startsWith(prefix)).length;
+  $('#monthSummary').innerHTML = `
+    <span class="chip">閱讀<b>${new Set(ms.map(s => s.date)).size}</b>天</span>
+    <span class="chip">共<b>${pages}</b>頁</span>
+    <span class="chip">讀完<b>${finished}</b>本</span>`;
+
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push('<div class="day empty"></div>');
+  for (let d = 1; d <= days; d++) {
+    const date = `${prefix}-${pad(d)}`;
+    const ss = ms.filter(s => s.date === date);
+    const ids = [...new Set(ss.map(s => s.bookId))].filter(bookById);
+    const isSun = (lead + d - 1) % 7 === 6;
+    const covers = ids.slice(0, 3).map((id, i) => coverHTML(bookById(id), '', `left:${i * 5}px;top:${i * 3}px;z-index:${10 - i};transform:rotate(${[-4, 3, -2][i]}deg)`)).join('');
+    const fin = ids.map(bookById).find(b => b.finishedAt === date && b.rating);
+    const p = ss.reduce((a, s) => a + readPages(s), 0);
+    cells.push(`<div class="day ${isSun ? 'sun' : ''} ${date === todayStr() ? 'today' : ''}" data-date="${date}" tabindex="0" role="button" aria-label="${m + 1}月${d}日${p ? '，讀了' + p + '頁' : ''}">
+      <div class="num">${d}</div>
+      ${ids.length ? `<div class="covers">${covers}</div>` : ''}
+      ${fin ? `<div class="stars-mini">${stars(fin.rating)}</div>` : (p ? `<div class="pages-mini">${p} 頁</div>` : '')}
+    </div>`);
+  }
+  while (cells.length % 7) cells.push('<div class="day empty"></div>');
+  let html = '';
+  for (let i = 0; i < cells.length; i += 7) html += `<div class="week">${cells.slice(i, i + 7).join('')}</div>`;
+  $('#weeks').innerHTML = html;
+  document.querySelectorAll('.day[data-date]').forEach(el => {
+    el.onclick = () => openDay(el.dataset.date);
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDay(el.dataset.date); } };
+  });
+}
+
+function openDay(date) {
+  const ss = db.sessions.filter(s => s.date === date);
+  const [, m, d] = date.split('-');
+  const list = ss.length ? ss.map(s => {
+    const b = bookById(s.bookId); if (!b) return '';
+    return `<div class="book-row" data-book="${b.id}">${coverHTML(b, 'cover-md')}
+      <div class="book-info"><div class="book-title">${esc(b.title)}</div>
+        <div class="book-author">第 ${s.fromPage} → ${s.toPage} 頁（${readPages(s)} 頁）${s.minutes ? ' · ' + s.minutes + ' 分鐘' : ''}</div>
+        ${s.note ? `<div class="hint">「${esc(s.note)}」</div>` : ''}</div></div>`;
+  }).join('') : '<div class="empty-msg">這天還沒有閱讀紀錄</div>';
+  const reading = db.books.filter(b => b.status !== 'done');
+  showModal(`
+    <h2>${+m}月${+d}日 閱讀紀錄 <button class="close" onclick="closeModal()" aria-label="關閉">×</button></h2>
+    ${list}
+    ${reading.length ? `<label for="dayBook">新增這天的閱讀</label>
+      <select id="dayBook">${reading.map(b => `<option value="${b.id}">${esc(b.title)}</option>`).join('')}</select>
+      <div class="btn-row"><button class="btn primary" id="dayLog">記錄閱讀</button></div>`
+      : `<div class="btn-row"><button class="btn primary" onclick="openAddBook()">＋ 先新增一本書</button></div>`}`);
+  document.querySelectorAll('#modal .book-row').forEach(el => el.onclick = () => openBook(el.dataset.book));
+  if ($('#dayLog')) $('#dayLog').onclick = () => openLog($('#dayBook').value, date);
+}
+
+function renderShelf() {
+  document.querySelectorAll('#shelfFilter button').forEach(b => b.classList.toggle('active', b.dataset.f === shelfFilter));
+  const order = { reading: 0, want: 1, done: 2 };
+  const books = db.books.filter(b => shelfFilter === 'all' || b.status === shelfFilter)
+    .sort((a, b) => order[a.status] - order[b.status] || (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  if (!books.length) { $('#shelfList').innerHTML = '<div class="empty-msg">書櫃空空的<br>按右下角 ＋ 加入第一本書吧！</div>'; return; }
+  $('#shelfList').innerHTML = books.map(b => {
+    const p = currentPage(b), pct = b.status === 'done' ? 100 : Math.min(100, Math.round(p / b.totalPages * 100));
+    const badge = { reading: ['閱讀中', ''], want: ['想讀', 'want'], done: ['已讀完', 'done'] }[b.status];
+    return `<div class="book-row" data-book="${b.id}">${coverHTML(b, 'cover-md')}
+      <div class="book-info"><div class="book-title">${esc(b.title)}</div>
+        <div class="book-author">${esc(b.author || '未知作者')} <span class="badge ${badge[1]}">${badge[0]}</span>
+          ${b.rating ? `<span style="color:var(--orange)">${stars(b.rating)}</span>` : ''}</div>
+        <div class="bar ${b.status === 'done' ? 'done' : ''}"><div style="width:${pct}%"></div></div>
+        <div class="meta"><span>${p} / ${b.totalPages} 頁</span><span>${pct}%</span></div></div></div>`;
+  }).join('');
+  document.querySelectorAll('#shelfList .book-row').forEach(el => el.onclick = () => openBook(el.dataset.book));
+}
+
+/* ============ 夥伴頁 ============ */
+function renderPet() {
+  const n = finishedCount(), st = stageOf(n), next = STAGES[st + 1];
+  const prevNeed = STAGES[st].need;
+  const growPct = next ? Math.round((n - prevNeed) / (next.need - prevNeed) * 100) : 100;
+  const pts = balance();
+  const items = Object.entries(ITEMS).filter(([, it]) => it.slot === shopSlot);
+  $('#petView').innerHTML = `
+    <div class="scene" id="scene" style="background:${BGS[pet.eq.bg] || BGS.bg_plain}">
+      <div class="say"><span id="petSay">點點我！</span></div>
+      ${petSVG(st)}
+    </div>
+    <div class="pet-name">
+      <h2><span class="lv">Lv.${st + 1}</span> ${esc(petName())} <button class="btn small" id="rename" aria-label="幫夥伴取名字">✎</button></h2>
+      <span class="pts">${pts} <small>積分</small></span>
+    </div>
+    <div class="hint" style="font-size:13px">${next ? `已讀完 ${n} 本，再讀完 <b>${next.need - n}</b> 本就會長成「${next.name}」` : `已讀完 ${n} 本，夥伴已經長到最大了！`}</div>
+    <div class="bar done" style="margin-top:6px"><div style="width:${growPct}%"></div></div>
+
+    <div class="roadmap">${STAGES.map((s, i) => `<div class="${i > st ? 'locked' : ''} ${i === st ? 'cur' : ''}">${petSVG(i, i > st ? defaultPet().eq : pet.eq, { cls: 'pet' })}${s.name}<br>${s.need} 本</div>`).join('')}</div>
+
+    <div class="section-h">怎麼得到積分</div>
+    <ul class="rules">
+      <li>每讀 10 頁 +1 分</li><li>每天有閱讀 +2 分</li><li>每讀完一本書 +30 分</li>
+      <li>夥伴成長看「讀完的書」數量；有些道具要長大後才能兌換</li>
+    </ul>
+
+    <div class="section-h">換裝小舖</div>
+    <div class="shop-tabs" id="shopTabs">${SLOTS.map(([k, v]) => `<button data-s="${k}" class="${k === shopSlot ? 'active' : ''}">${v}</button>`).join('')}</div>
+    <div class="shop">${items.map(([id, it]) => {
+      const owned = pet.owned.includes(id), on = pet.eq[it.slot] === id, locked = (it.stage || 0) > st;
+      const prevEq = { ...pet.eq, [it.slot]: id };
+      const thumb = it.slot === 'bg' ? `<div class="thumb" style="background:${BGS[id]}"></div>` : `<div class="thumb">${petSVG(Math.max(st, 2), prevEq, { cls: 'pet' })}</div>`;
+      let btn;
+      if (on) btn = it.slot === 'color' || it.slot === 'bg' ? `<button class="btn small" disabled>使用中</button>` : `<button class="btn small" data-off="${it.slot}">脫下</button>`;
+      else if (owned) btn = `<button class="btn small yellow" data-wear="${id}">穿上</button>`;
+      else if (locked) btn = `<button class="btn small" disabled>🔒 ${it.price} 分</button>`;
+      else btn = `<button class="btn small ${pts >= it.price ? 'primary' : ''}" data-buy="${id}" ${pts >= it.price ? '' : 'disabled'}>${it.price} 分兌換</button>`;
+      return `<div class="item ${on ? 'on' : ''}">${thumb}<div class="nm">${it.name}</div>${locked && !owned ? `<div class="lock">長成「${STAGES[it.stage].name}」解鎖</div>` : ''}${btn}</div>`;
+    }).join('')}</div>`;
+
+  const svg = $('#scene svg.pet');
+  svg.onclick = () => petPoke();
+  $('#rename').onclick = () => openRename();
+  document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopSlot = b.dataset.s; renderPet(); });
+  document.querySelectorAll('[data-wear]').forEach(b => b.onclick = () => { const it = ITEMS[b.dataset.wear]; pet.eq = { ...pet.eq, [it.slot]: b.dataset.wear }; savePet(); renderPet(); petPoke('好看嗎？'); });
+  document.querySelectorAll('[data-off]').forEach(b => b.onclick = () => { pet.eq = { ...pet.eq, [b.dataset.off]: null }; savePet(); renderPet(); });
+  document.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => buyItem(b.dataset.buy));
+}
+const pokeLines = ['嘻嘻，好癢！', '今天讀什麼書呢？', '我最喜歡聽你說故事了', '書裡有好多冒險耶！', '再讀一頁就好～', '你是最棒的讀者！', '肚子餓了…想吃一本書'];
+function petPoke(line) {
+  const svg = $('#scene svg.pet'); if (!svg) return;
+  const st = stageOf(finishedCount());
+  svg.outerHTML = petSVG(st, pet.eq, { mood: 'happy', cls: 'pet hop' });
+  const nsvg = $('#scene svg.pet'); nsvg.onclick = () => petPoke();
+  $('#petSay').textContent = line || (st === 0 ? '蛋殼裡傳來咚咚聲…讀完第一本書我就會出來！' : pick(pokeLines));
+  const scene = $('#scene');
+  for (let i = 0; i < 3; i++) {
+    const h = document.createElement('span'); h.className = 'heart-pop'; h.textContent = pick(['❤', '★', '♪']);
+    h.style.left = (40 + Math.random() * 20) + '%'; h.style.bottom = (40 + Math.random() * 20) + '%'; h.style.color = pick(palette);
+    h.style.animationDelay = i * .12 + 's'; scene.appendChild(h); setTimeout(() => h.remove(), 1400);
+  }
+  clearTimeout(petPoke._t);
+  petPoke._t = setTimeout(() => { const s = $('#scene svg.pet'); if (s) { s.outerHTML = petSVG(st); $('#scene svg.pet').onclick = () => petPoke(); } }, 1600);
+}
+async function buyItem(id) {
+  const it = ITEMS[id];
+  if (balance() < it.price) return toast('積分不夠，再多讀一點書吧！');
+  if (!await askConfirm(`用 ${it.price} 積分兌換「${it.name}」嗎？`)) return;
+  pet.spent = (pet.spent || 0) + it.price;
+  pet.owned = [...new Set([...pet.owned, id])];
+  pet.eq = { ...pet.eq, [it.slot]: id };
+  savePet(); renderPet(); confetti(80);
+  petPoke(`哇！謝謝你送我${it.name}！`);
+}
+function openRename() {
+  showModal(`<h2>幫夥伴取名字 <button class="close" onclick="closeModal()" aria-label="關閉">×</button></h2>
+    <label for="pName">名字</label><input id="pName" maxlength="12" value="${esc(pet.name)}" placeholder="${STAGES[stageOf(finishedCount())].name}">
+    <div class="hint">留空就用成長階段的名稱。</div>
+    <div class="btn-row"><button class="btn primary" id="pSave">好了</button></div>`);
+  $('#pSave').onclick = () => { pet.name = $('#pName').value.trim(); savePet(); closeModal(); render(); };
+}
+
+function renderStats() {
+  const year = String(new Date().getFullYear());
+  const totalPages = db.sessions.reduce((a, s) => a + readPages(s), 0);
+  const doneYear = db.books.filter(b => b.finishedAt?.startsWith(year)).length;
+  const days = new Set(db.sessions.map(s => s.date));
+  let streak = 0; const d = new Date();
+  if (!days.has(ymd(d))) d.setDate(d.getDate() - 1);
+  while (days.has(ymd(d))) { streak++; d.setDate(d.getDate() - 1); }
+  const minutes = db.sessions.reduce((a, s) => a + (+s.minutes || 0), 0);
+  $('#statGrid').innerHTML = `
+    <div class="stat"><div class="v">${doneYear}</div><div class="l">${year} 年讀完（本）</div></div>
+    <div class="stat"><div class="v">${streak}</div><div class="l">連續閱讀（天）</div></div>
+    <div class="stat"><div class="v">${totalPages.toLocaleString()}</div><div class="l">累計閱讀（頁）</div></div>
+    <div class="stat"><div class="v">${Math.round(minutes / 6) / 10}</div><div class="l">累計閱讀（小時）</div></div>`;
+  const months = [];
+  for (let i = 11; i >= 0; i--) { const t = new Date(); t.setDate(1); t.setMonth(t.getMonth() - i); months.push(t); }
+  const vals = months.map(t => { const p = `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; return db.sessions.filter(s => s.date.startsWith(p)).reduce((a, s) => a + readPages(s), 0); });
+  const max = Math.max(1, ...vals);
+  $('#monthBars').innerHTML = vals.map((v, i) => `<div class="col ${i === 11 ? 'now' : ''}"><em>${v || ''}</em><div class="b" style="height:${v / max * 85}%"></div></div>`).join('');
+  $('#barLabels').innerHTML = months.map(t => `<span>${t.getMonth() + 1}月</span>`).join('');
+}
+
+/* ============ Modal ============ */
+function showModal(html) { $('#modal').innerHTML = html; $('#overlay').hidden = false; }
+function closeModal() { $('#overlay').hidden = true; }
+$('#overlay').onclick = e => { if (e.target.id === 'overlay') closeModal(); };
+
+/* ============ 新增書籍 ============ */
+let draft = null;
+function openAddBook() {
+  if (!needReady()) return;
+  draft = { title: '', author: '', totalPages: '', cover: '', booksUrl: '', status: 'reading' };
+  showModal(`
+    <h2>新增書籍 <button class="close" onclick="closeModal()" aria-label="關閉">×</button></h2>
+    <label for="dTitle">書名或 ISBN *</label>
+    <div class="row">
+      <input id="dTitle" placeholder="例如：小王子" style="flex:3 1 180px">
+      <button class="btn yellow small" id="gSearch" style="flex:1 0 auto">🔍 查書</button>
+    </div>
+    <div class="hint" id="gHint">輸入書名按「查書」，可以自動帶入作者、頁數和封面。</div>
+    <div class="results" id="gRes"></div>
+    <div class="row">
+      <div><label for="dAuthor">作者</label><input id="dAuthor"></div>
+      <div><label for="dPages">總頁數 *</label><input id="dPages" type="number" min="1" inputmode="numeric"></div>
+    </div>
+    <label>封面</label>
+    <div class="cover-pick">
+      <span id="dCover"></span>
+      <div class="hint" style="margin:0">點封面可以<b>拍照</b>或選一張圖片<br>電腦上也可以直接 Ctrl+V 貼上圖片</div>
+    </div>
+    <label for="dUrl">博客來網址（可不填，貼上會自動帶入封面）</label>
+    <input id="dUrl" placeholder="https://www.books.com.tw/products/…">
+    <div class="hint" id="bkHint"><a href="#" id="bkSearch" target="_blank" rel="noopener">在博客來搜尋這本書 ↗</a>，找到後把網址貼回來。</div>
+    <label for="dStatus">狀態</label>
+    <select id="dStatus"><option value="reading">閱讀中</option><option value="want">想讀</option></select>
+    <div class="btn-row"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn primary" id="dSave">加入書櫃</button></div>`);
+  const sync = () => {
+    draft.title = $('#dTitle').value.trim(); draft.author = $('#dAuthor').value.trim(); draft.totalPages = $('#dPages').value;
+    const a = $('#bkSearch');   // 貼了博客來網址後這個連結會換成提示文字
+    if (a) a.href = draft.title ? booksSearchUrl(draft.title) : 'https://www.books.com.tw/';
+  };
+  ['dTitle', 'dAuthor', 'dPages'].forEach(id => $('#' + id).oninput = () => { sync(); if (id === 'dTitle') drawDraftCover(); });
+  $('#dTitle').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) searchBooks(); };
+  $('#gSearch').onclick = searchBooks;
+  $('#dStatus').onchange = e => draft.status = e.target.value;
+  $('#dUrl').oninput = () => {
+    const id = parseBooksUrl($('#dUrl').value);
+    draft.booksUrl = id ? `https://www.books.com.tw/products/${id}` : '';
+    if (!id) return;
+    if (!draft.cover.startsWith('data:')) { draft.cover = booksCover(id); drawDraftCover(); }
+    $('#bkHint').textContent = '✓ 已連結博客來商品頁，封面也帶進來了';
+  };
+  sync(); drawDraftCover();
+  $('#dTitle').focus();
+  $('#dSave').onclick = () => {
+    sync();
+    if (!draft.title) return toast('請輸入書名');
+    if (!(+draft.totalPages > 0)) return toast('請輸入總頁數');
+    const b = { id: uid(), title: draft.title, author: draft.author, totalPages: +draft.totalPages, cover: draft.cover,
+      booksUrl: draft.booksUrl, status: draft.status, rating: 0, addedAt: todayStr(), updatedAt: new Date().toISOString(), finishedAt: null };
+    putBook(b); closeModal(); render();
+    toast(`《${b.title}》已加入書櫃`);
+    if (b.status === 'reading') setTimeout(() => openBook(b.id), 300);
+  };
+}
+function drawDraftCover() {
+  $('#dCover').innerHTML = coverHTML({ title: draft.title, cover: draft.cover, booksUrl: draft.booksUrl }, 'cover-md');
+  $('#dCover').firstElementChild.onclick = () => { coverTarget = null; $('#coverFile').click(); };
+}
+
+// 查書：Google Books（書名、作者或 ISBN）
+async function searchBooks() {
+  const q = $('#dTitle').value.trim();
+  if (!q) return toast('先輸入書名或 ISBN');
+  const isbn = q.replace(/[-\s]/g, '');
+  const query = /^\d{9}[\dX]$|^\d{13}$/i.test(isbn) ? 'isbn:' + isbn : q;
+  $('#gRes').innerHTML = '<div class="empty-msg">查詢中…</div>';
+  // 先查 Google Books；忙碌（429）或找不到時改查 Open Library
+  const google = async () => {
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`);
+    if (!r.ok) throw new Error(r.status);
+    return ((await r.json()).items || []).map(it => {
+      const v = it.volumeInfo || {};
+      return { title: v.title + (v.subtitle ? '：' + v.subtitle : ''), author: (v.authors || []).join('、'), pages: v.pageCount || '',
+        cover: (v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '').replace(/^http:/, 'https:').replace('&edge=curl', '') };
+    });
+  };
+  const openLibrary = async () => {
+    const key = query.startsWith('isbn:') ? 'isbn=' + query.slice(5) : 'q=' + encodeURIComponent(q);
+    const r = await fetch(`https://openlibrary.org/search.json?${key}&limit=10&fields=title,author_name,number_of_pages_median,cover_i`);
+    if (!r.ok) throw new Error(r.status);
+    return ((await r.json()).docs || []).map(d => ({ title: d.title, author: (d.author_name || []).join('、'), pages: d.number_of_pages_median > 20 ? d.number_of_pages_median : '',
+      cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '' }));
+  };
+  try {
+    let items = [];
+    try { items = await google(); } catch {}
+    if (!items.length) items = await openLibrary();
+    if (!items.length) { $('#gRes').innerHTML = '<div class="empty-msg">找不到，換個關鍵字，或直接自己填</div>'; return; }
+    $('#gRes').innerHTML = items.map((b, i) => `<button class="result" data-i="${i}">
+      ${coverHTML({ title: b.title, cover: b.cover }, 'cover-sm')}
+      <span class="r-info"><b>${esc(b.title)}</b><small>${esc(b.author || '作者不明')}${b.pages ? ' · ' + b.pages + ' 頁' : ''}</small></span></button>`).join('');
+    $('#gHint').textContent = '點一本帶入資料（頁數可能和你手上的版本不同，請對照一下）。';
+    document.querySelectorAll('#gRes .result').forEach(el => el.onclick = () => {
+      const b = items[el.dataset.i];
+      $('#dTitle').value = b.title; $('#dAuthor').value = b.author; if (b.pages) $('#dPages').value = b.pages;
+      if (b.cover && !draft.cover.startsWith('data:') && !draft.booksUrl) draft.cover = b.cover;
+      $('#gRes').innerHTML = '';
+      ['dTitle', 'dAuthor', 'dPages'].forEach(id => $('#' + id).dispatchEvent(new Event('input')));
+    });
+  } catch {
+    $('#gRes').innerHTML = '<div class="empty-msg">連不上查書服務，請自己填寫</div>';
+  }
+}
+
+let coverTarget = null;
+async function setCoverFromFile(f) {
+  if (!f || !f.type.startsWith('image/')) return;
+  try {
+    const url = await shrinkImage(f);
+    if (coverTarget) { const b = { ...bookById(coverTarget), cover: url, updatedAt: new Date().toISOString() }; putBook(b); openBook(b.id); render(); coverTarget = null; }
+    else if (draft && !$('#overlay').hidden && $('#dCover')) { draft.cover = url; drawDraftCover(); }
+    toast('封面已更新');
+  } catch { toast('無法讀取這張圖片'); }
+}
+$('#coverFile').onchange = e => { setCoverFromFile(e.target.files[0]); e.target.value = ''; };
+document.addEventListener('paste', e => {
+  if (!$('#dCover') && !coverTarget) return;
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (item) { e.preventDefault(); setCoverFromFile(item.getAsFile()); }
+});
+
+/* ============ 書籍詳情 ============ */
+function openBook(id) {
+  const b = bookById(id); if (!b) return closeModal();
+  const p = currentPage(b), pct = Math.min(100, Math.round(p / b.totalPages * 100));
+  const ss = sessionsOf(id).reverse();
+  showModal(`
+    <h2><span></span><button class="close" onclick="closeModal()" aria-label="關閉">×</button></h2>
+    <div class="detail-head">
+      ${coverHTML(b, 'cover-lg')}
+      <div style="flex:1; min-width:0">
+        <div class="book-title" style="white-space:normal; font-size:18px">${esc(b.title)}</div>
+        <div class="book-author">${esc(b.author || '未知作者')}</div>
+        <div class="rating" id="rating">${[1, 2, 3, 4, 5].map(n => `<button data-n="${n}" class="${n <= b.rating ? 'on' : ''}" aria-label="${n} 顆星">★</button>`).join('')}</div>
+        <a class="bk-link" href="${esc(b.booksUrl || booksSearchUrl(b.title))}" target="_blank" rel="noopener">${b.booksUrl ? '在博客來查看 ↗' : '在博客來搜尋 ↗'}</a>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="bar ${b.status === 'done' ? 'done' : ''}"><div style="width:${b.status === 'done' ? 100 : pct}%"></div></div>
+      <div class="meta"><span>目前讀到第 <b>${p}</b> / ${b.totalPages} 頁</span><span>${b.status === 'done' ? b.finishedAt + ' 讀完' : pct + '%'}</span></div>
+    </div>
+    <div class="btn-row">
+      ${b.status !== 'done' ? `<button class="btn primary" id="bLog">記錄閱讀</button>` : ''}
+      <button class="btn ghost" id="bEdit">編輯</button>
+    </div>
+    <h3 style="font-size:15px; margin:18px 0 4px">閱讀紀錄（${ss.length}）</h3>
+    ${ss.length ? ss.map(s => `<div class="session">
+      <div><b>${s.date}</b>　第 ${s.fromPage} → ${s.toPage} 頁<br>
+      <small>${readPages(s)} 頁${s.minutes ? ' · ' + s.minutes + ' 分鐘' : ''}${s.note ? ' · ' + esc(s.note) : ''}</small></div>
+      <button class="del" data-s="${s.id}" aria-label="刪除這筆紀錄">✕</button></div>`).join('') : '<div class="empty-msg">還沒有紀錄，開始讀第一頁吧！</div>'}`);
+  document.querySelectorAll('#rating button').forEach(el => el.onclick = () => { putBook({ ...b, rating: +el.dataset.n }); openBook(id); render(); });
+  if ($('#bLog')) $('#bLog').onclick = () => openLog(id);
+  $('#bEdit').onclick = () => openEdit(id);
+  document.querySelectorAll('.session .del').forEach(el => el.onclick = async () => {
+    if (!await askConfirm('刪除這筆閱讀紀錄？')) return;
+    delSession(el.dataset.s);
+    if (b.status === 'done' && currentPage(b) < b.totalPages) putBook({ ...b, status: 'reading', finishedAt: null });
+    openBook(id); render();
+  });
+}
+
+function openEdit(id) {
+  const b = bookById(id);
+  showModal(`
+    <h2>編輯書籍 <button class="close" onclick="openBook('${id}')" aria-label="返回">×</button></h2>
+    <label for="eTitle">書名</label><input id="eTitle" value="${esc(b.title)}">
+    <div class="row">
+      <div><label for="eAuthor">作者</label><input id="eAuthor" value="${esc(b.author)}"></div>
+      <div><label for="ePages">總頁數</label><input id="ePages" type="number" inputmode="numeric" value="${b.totalPages}"></div>
+    </div>
+    <label for="eUrl">博客來網址</label><input id="eUrl" value="${esc(b.booksUrl || '')}" placeholder="https://www.books.com.tw/products/…">
+    <label for="eStatus">狀態</label>
+    <select id="eStatus">
+      <option value="reading" ${b.status === 'reading' ? 'selected' : ''}>閱讀中</option>
+      <option value="want" ${b.status === 'want' ? 'selected' : ''}>想讀</option>
+      <option value="done" ${b.status === 'done' ? 'selected' : ''}>已讀完</option>
+    </select>
+    <div class="btn-row"><button class="btn ghost" id="eCover">換封面</button><button class="btn danger" id="eDel">刪除書籍</button></div>
+    <div class="btn-row"><button class="btn primary" id="eSave">儲存</button></div>`);
+  $('#eCover').onclick = () => { coverTarget = id; $('#coverFile').click(); };
+  $('#eDel').onclick = async () => {
+    if (!await askConfirm(`確定刪除《${b.title}》以及所有閱讀紀錄？`)) return;
+    delBook(id); closeModal(); render();
+  };
+  $('#eSave').onclick = () => {
+    const nb = { ...b, title: $('#eTitle').value.trim() || b.title, author: $('#eAuthor').value.trim(),
+      totalPages: +$('#ePages').value || b.totalPages, updatedAt: new Date().toISOString() };
+    const bid = parseBooksUrl($('#eUrl').value);
+    nb.booksUrl = bid ? `https://www.books.com.tw/products/${bid}` : ($('#eUrl').value.trim() ? b.booksUrl : '');
+    const ns = $('#eStatus').value;
+    if (ns === 'done' && b.status !== 'done') return finishBook(nb, todayStr());
+    nb.status = ns; if (ns !== 'done') nb.finishedAt = null;
+    putBook(nb); openBook(id); render();
+  };
+}
+
+/* ============ 記錄閱讀 ============ */
+function openLog(id, date = todayStr()) {
+  if (!needReady()) return;
+  const b = bookById(id), p = currentPage(b);
+  showModal(`
+    <h2>記錄閱讀 <button class="close" onclick="openBook('${id}')" aria-label="返回">×</button></h2>
+    <div class="preview">${coverHTML(b, 'cover-md')}<div style="min-width:0"><div class="book-title" style="white-space:normal">${esc(b.title)}</div>
+      <div class="book-author">上次讀到第 ${p} 頁 / 共 ${b.totalPages} 頁</div></div></div>
+    <label for="lDate">閱讀日期</label><input id="lDate" type="date" value="${date}">
+    <div class="row">
+      <div><label for="lFrom">從第幾頁</label><input id="lFrom" type="number" inputmode="numeric" min="0" value="${p}"></div>
+      <div><label for="lTo">讀到第幾頁</label><input id="lTo" type="number" inputmode="numeric" min="0" max="${b.totalPages}" placeholder="例如 ${Math.min(b.totalPages, p + 30)}"></div>
+    </div>
+    <div class="quick">
+      <button class="btn small" data-add="10">+10 頁</button>
+      <button class="btn small" data-add="30">+30 頁</button>
+      <button class="btn small" data-add="50">+50 頁</button>
+      <button class="btn small yellow" data-add="end">讀完了！</button>
+    </div>
+    <label for="lMin">閱讀時間（分鐘，可不填）</label><input id="lMin" type="number" inputmode="numeric" min="0">
+    <label for="lNote">心得 / 筆記（可不填）</label><textarea id="lNote" rows="2"></textarea>
+    <div class="btn-row"><button class="btn primary" id="lSave">儲存紀錄</button></div>`);
+  document.querySelectorAll('[data-add]').forEach(el => el.onclick = () => {
+    $('#lTo').value = el.dataset.add === 'end' ? b.totalPages : Math.min(b.totalPages, (+$('#lFrom').value || 0) + +el.dataset.add);
+  });
+  $('#lSave').onclick = () => {
+    const from = +$('#lFrom').value || 0, to = +$('#lTo').value, d = $('#lDate').value;
+    if (!d) return toast('請選擇日期');
+    if (!(to > from)) return toast('「讀到第幾頁」要大於「從第幾頁」');
+    if (to > b.totalPages) return toast(`這本書只有 ${b.totalPages} 頁`);
+    const before = earned();
+    putSession({ id: uid(), bookId: id, date: d, fromPage: from, toPage: to, minutes: +$('#lMin').value || 0, note: $('#lNote').value.trim() });
+    const nb = { ...b, status: b.status === 'want' ? 'reading' : b.status, updatedAt: new Date().toISOString() };
+    if (to >= b.totalPages && b.status !== 'done') return finishBook(nb, d, before);
+    putBook(nb); closeModal();
+    const [yy, mm] = d.split('-'); cur = new Date(+yy, +mm - 1, 1); view = 'calendar'; render();
+    const gain = earned() - before;
+    toast(`讀了 ${to - from} 頁！進度 ${Math.round(to / b.totalPages * 100)}%${gain ? `　積分 +${gain}` : ''}`);
+  };
+}
+
+/* ============ 讀完慶祝 ============ */
+const cheers = ['太厲害了！', '又完成一本好書！', '閱讀力 MAX！', '知識 +1！', '你是閱讀之星！'];
+function finishBook(b, date, before = earned()) {
+  const stBefore = stageOf(finishedCount());
+  b = { ...b, status: 'done', finishedAt: date, updatedAt: new Date().toISOString() };
+  putBook(b);
+  const st = stageOf(finishedCount()), gain = earned() - before;
+  const doneYear = db.books.filter(x => x.finishedAt?.startsWith(date.slice(0, 4))).length;
+  const days = new Set(sessionsOf(b.id).map(s => s.date)).size;
+  showModal(`<div class="celebrate">
+    <div class="stage-pet">${petSVG(st, pet.eq, { mood: 'happy', cls: 'pet hop' })}</div>
+    <h2>${pick(cheers)}</h2>
+    ${st > stBefore ? `<div class="levelup">升級了！夥伴長成「${STAGES[st].name}」</div>` : ''}
+    <div style="font-weight:700; margin-top:6px">《${esc(b.title)}》</div>
+    <div class="hint" style="font-size:14px">共 ${b.totalPages} 頁 · 花了 ${days} 天讀完 · 積分 +${gain}<br>這是你 ${date.slice(0, 4)} 年讀完的第 <span class="big-num">${doneYear}</span> 本書！</div>
+    <div style="margin-top:12px; font-size:14px">幫這本書評分吧</div>
+    <div class="rating" id="cRating">${[1, 2, 3, 4, 5].map(n => `<button data-n="${n}" aria-label="${n} 顆星">★</button>`).join('')}</div>
+    <div class="btn-row"><button class="btn primary" id="cOk">太棒了！</button>${st > stBefore ? '<button class="btn yellow" id="cPet">去看夥伴</button>' : ''}</div>
+  </div>`);
+  let rating = 0;
+  const btns = document.querySelectorAll('#cRating button');
+  const paint = n => btns.forEach(s => s.classList.toggle('on', +s.dataset.n <= n));
+  btns.forEach(el => {
+    el.onmouseenter = () => paint(+el.dataset.n);
+    el.onclick = () => { rating = +el.dataset.n; paint(rating); confetti(60); };
+  });
+  $('#cRating').onmouseleave = () => paint(rating);
+  const done = v => {
+    if (rating) putBook({ ...bookById(b.id), rating });
+    closeModal(); const [yy, mm] = date.split('-'); cur = new Date(+yy, +mm - 1, 1); goView(v);
+  };
+  $('#cOk').onclick = () => done('calendar');
+  if ($('#cPet')) $('#cPet').onclick = () => done('pet');
+  confetti(220); setTimeout(() => confetti(120), 700);
+}
+
+const cv = $('#confetti'), cx = cv.getContext('2d');
+let parts = [], animating = false;
+function confetti(n) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  cv.width = innerWidth; cv.height = innerHeight;
+  for (let i = 0; i < n; i++) {
+    const L = i % 2 === 0;
+    parts.push({ x: L ? 0 : cv.width, y: cv.height * .7, vx: (L ? 1 : -1) * (4 + Math.random() * 9), vy: -(10 + Math.random() * 12),
+      w: 7 + Math.random() * 6, h: 9 + Math.random() * 8, r: Math.random() * 6, vr: (Math.random() - .5) * .4,
+      c: palette[i % palette.length], life: 0, kind: pick(['rect', 'rect', 'heart', 'star']) });
+  }
+  if (!animating) { animating = true; requestAnimationFrame(tick); }
+}
+function tick() {
+  cx.clearRect(0, 0, cv.width, cv.height);
+  parts.forEach(p => {
+    p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life++;
+    cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.strokeStyle = INK; cx.lineWidth = 1.5;
+    if (p.kind === 'rect') { cx.beginPath(); cx.rect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.life / 6))); cx.fill(); cx.stroke(); }
+    else { const path = new Path2D(p.kind === 'heart' ? heartPath(0, 0, p.w * .8) : starPath(0, 0, p.w)); cx.fill(path); cx.stroke(path); }
+    cx.restore();
+  });
+  parts = parts.filter(p => p.y < cv.height + 40 && p.life < 400);
+  if (parts.length) requestAnimationFrame(tick); else { animating = false; cx.clearRect(0, 0, cv.width, cv.height); }
+}
+
+/* ============ 選單：帳號 / 手機捷徑 / 匯入匯出 ============ */
+function openMenu() {
+  const cloud = mode === 'cloud';
+  showModal(`
+    <h2>設定 <button class="close" onclick="closeModal()" aria-label="關閉">×</button></h2>
+    ${cloud ? `<div class="acct sticker">
+        <div><b>${esc(me.no !== '' ? me.no + ' 號 ' : '')}${esc(me.name || '')}</b><br><small>${esc(me.email)}</small></div>
+        <button class="btn small danger" id="mLogout">登出</button></div>
+      <div class="hint">書櫃、閱讀紀錄和夥伴都存在雲端，用這個帳號在任何電腦或手機登入都一樣。老師看得到你的閱讀紀錄。<br>在學校的電腦用完記得<b>登出</b>。</div>
+      ${me.admin ? '<div class="btn-row"><a class="btn yellow" href="admin/">🛠 老師後台：看全班閱讀量</a></div>' : ''}`
+      : '<div class="hint" style="font-size:13px">現在是直接打開檔案，資料只存在這台電腦的瀏覽器裡。用網址打開並登入，才能換電腦、讓老師看到。</div>'}
+    <h3 style="font-size:15px; margin:18px 0 4px">加到手機主畫面</h3>
+    <ol class="steps">
+      <li>用手機瀏覽器打開這個網址並登入</li>
+      <li><b>iPhone（Safari）</b>：點下方「分享」按鈕 →「加入主畫面」</li>
+      <li><b>Android（Chrome）</b>：點右上角「⋮」→「加到主畫面」</li>
+    </ol>
+    <h3 style="font-size:15px; margin:18px 0 4px">資料</h3>
+    <div class="hint">可以匯入以前的閱讀日曆（本機版或 claude.ai 版）匯出的備份檔。</div>
+    <div class="btn-row">
+      <button class="btn ghost" id="mImport">匯入備份</button>
+      <button class="btn ghost" id="mExport">匯出備份</button>
+    </div>
+    ${cloud ? '' : '<div class="btn-row"><button class="btn yellow" id="mDemo">載入範例資料</button></div>'}`);
+  $('#mImport').onclick = () => $('#importFile').click();
+  $('#mExport').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: '我的閱讀日曆', ...db, pet }, null, 2)], { type: 'application/json' }));
+    a.download = `閱讀紀錄備份-${todayStr()}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  };
+  if ($('#mDemo')) $('#mDemo').onclick = loadDemo;
+  if ($('#mLogout')) $('#mLogout').onclick = async () => { if (await askConfirm('確定要登出嗎？')) logout(); };
+}
+$('#importFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !needReady()) return;
+  let d;
+  try { d = JSON.parse(await f.text()); if (!Array.isArray(d.books) || !Array.isArray(d.sessions)) throw 0; }
+  catch { return toast('檔案格式不正確'); }
+  if (!await askConfirm(`匯入 ${d.books.length} 本書、${d.sessions.length} 筆紀錄？（會加到現有資料中，相同的書會被覆蓋）`)) return;
+  closeModal(); toast('匯入中…');
+  for (const b of d.books) {
+    const nb = { ...b, cover: /^(data:image\/|https:\/\/)/.test(b.cover || '') ? b.cover : '' };
+    delete nb.booksId; delete nb.isbn;
+    putBook(nb);
+  }
+  for (const s of d.sessions) putSession(s);
+  if (d.pet) { pet = normPet(d.pet); savePet(); }
+  render(); toast('匯入完成 ✓');
+};
+
+async function loadDemo() {
+  if (!needReady()) return;
+  if (db.books.length && !await askConfirm('範例資料會加到你現有的書櫃中，確定嗎？')) return;
+  const t = new Date(), y = t.getFullYear(), m = t.getMonth(), dd = n => ymd(new Date(y, m, n));
+  const ids = [
+    { title: '原子習慣（範例）', author: 'James Clear', totalPages: 320 },
+    { title: '被討厭的勇氣（範例）', author: '岸見一郎、古賀史健', totalPages: 336 },
+    { title: '小王子（範例）', author: '聖修伯里', totalPages: 144 },
+  ].map(d => ({ id: uid(), cover: '', booksUrl: '', status: 'reading', rating: 0, addedAt: dd(1), updatedAt: new Date().toISOString(), finishedAt: null, ...d }));
+  if (t.getDate() >= 6) Object.assign(ids[2], { status: 'done', finishedAt: dd(6), rating: 5 });
+  ids.forEach(putBook);
+  [[1, 0, 0, 40], [2, 0, 40, 95], [4, 0, 95, 160], [5, 2, 0, 60], [6, 2, 60, 144], [8, 1, 0, 50], [9, 0, 160, 220], [11, 1, 50, 110]]
+    .filter(([d]) => d <= t.getDate())
+    .forEach(([d, i, f, to]) => putSession({ id: uid(), bookId: ids[i].id, date: dd(d), fromPage: f, toPage: to, minutes: 30, note: '' }));
+  closeModal(); cur = new Date(y, m, 1); goView('calendar'); toast('已載入範例資料，書名有標註（範例）');
+}
+
+/* ============ 事件 ============ */
+$('#prevM').onclick = () => { cur.setMonth(cur.getMonth() - 1); render(); };
+$('#nextM').onclick = () => { cur.setMonth(cur.getMonth() + 1); render(); };
+$('#todayBtn').onclick = () => { cur = new Date(); cur.setDate(1); render(); };
+$('#menuBtn').onclick = openMenu;
+$('#fab').onclick = openAddBook;
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => goView(b.dataset.view));
+document.querySelectorAll('#shelfFilter button').forEach(b => b.onclick = () => { shelfFilter = b.dataset.f; renderShelf(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#confirmBox').hidden) $('#confirmNo').click(); else closeModal(); } });
+
+render();
+start();
+</script>
+</body>
+</html>

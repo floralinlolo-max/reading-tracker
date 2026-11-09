@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>閱讀日曆老師後台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gochi+Hand&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<style>
+  /* Layout: same sticker/doodle language as the student app, but a wide working surface — header, tab row (閱讀總覽 / 學生名單), summary tiles, chart, sortable class table */
+  :root {
+    --bg: #fbf6e6; --card: #fffdf5; --ink: #1d1d1b; --muted: #6f6a5c; --soft: #f4ecd2; --field: #ffffff;
+    --sticker-ink: #1d1d1b; --red: #ff5a3c; --yellow: #ffd23f; --blue: #2fb8ff; --green: #6cc04a; --purple: #9b8bd6; --pink: #ff8fb1;
+    --warn-bg: #ffe1d9; --scrim: rgba(29,29,27,.45);
+    --wob: 18px 24px 16px 22px / 22px 16px 24px 18px; --wob-s: 12px 16px 10px 14px / 14px 10px 16px 12px;
+    --num: "Gochi Hand", "Huninn", "Comic Sans MS", cursive;
+    --body: "Huninn", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #1c1b18; --card: #2a2824; --ink: #f6efdc; --muted: #b5ad98; --soft: #36332c; --field: #23211d; --warn-bg: #4a2a22; --scrim: rgba(0,0,0,.6); color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #1c1b18; --card: #2a2824; --ink: #f6efdc; --muted: #b5ad98; --soft: #36332c; --field: #23211d; --warn-bg: #4a2a22; --scrim: rgba(0,0,0,.6); color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; }
+  button { font-family: inherit; cursor: pointer; color: inherit; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px dashed var(--blue); outline-offset: 2px; }
+  .app { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 40px; }
+  .sticker { background: var(--card); border: 2.5px solid var(--ink); border-radius: var(--wob); box-shadow: 4px 4px 0 var(--ink); }
+  .btn { border: 2.5px solid var(--ink); border-radius: var(--wob-s); padding: 7px 14px; font-size: 14px; font-weight: 700; box-shadow: 3px 3px 0 var(--ink); background: var(--card); text-decoration: none; display: inline-block; color: var(--ink); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn.primary { background: var(--red); color: #fff; }
+  .btn.yellow { background: var(--yellow); color: var(--sticker-ink); }
+  .btn.small { padding: 4px 10px; font-size: 13px; box-shadow: 2px 2px 0 var(--ink); }
+  .btn.danger { color: var(--red); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  input, select, textarea { padding: 7px 9px; border: 2px solid var(--ink); border-radius: 10px; font-size: 15px; font-family: inherit; background: var(--field); color: var(--ink); }
+  .hint { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  header h1 { margin: 0; font-size: 24px; text-wrap: balance; }
+  header h1 small { font-size: 15px; color: var(--muted); font-weight: 400; }
+  .hd-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .who { font-size: 13px; color: var(--muted); }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tabs button { border: 2.5px solid var(--ink); background: var(--card); border-radius: 999px; padding: 6px 16px; font-size: 15px; font-weight: 700; }
+  .tabs button.on { background: var(--ink); color: var(--card); }
+
+  .range { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding: 10px 12px; margin-bottom: 14px; }
+  .range .chip { border: 2px solid var(--ink); background: var(--card); border-radius: 999px; padding: 3px 12px; font-size: 13px; }
+  .range .chip.on { background: var(--yellow); color: var(--sticker-ink); font-weight: 700; }
+  .range input { padding: 4px 6px; font-size: 14px; }
+  .range .grow { flex: 1; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .tile { border: 2.5px solid var(--ink); border-radius: var(--wob-s); padding: 10px 14px; color: var(--sticker-ink); box-shadow: 3px 3px 0 var(--ink); }
+  .tile:nth-child(1) { background: var(--yellow); } .tile:nth-child(2) { background: var(--green); }
+  .tile:nth-child(3) { background: var(--blue); } .tile:nth-child(4) { background: var(--pink); }
+  .tile .v { font-family: var(--num); font-size: 36px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .tile .l { font-size: 13px; }
+  @media (max-width: 700px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .panel { padding: 14px; margin-bottom: 14px; }
+  .panel h2 { font-size: 17px; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chart-wrap { overflow-x: auto; }
+  .chart { display: flex; align-items: flex-end; gap: 3px; height: 150px; min-width: 100%; border-bottom: 2.5px solid var(--ink); padding-top: 14px; }
+  .chart .c { flex: 1 0 14px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
+  .chart .c em { font-style: normal; font-size: 10px; font-family: var(--num); }
+  .chart .c div { width: 100%; background: var(--yellow); border: 2px solid var(--ink); border-bottom: none; border-radius: 5px 6px 0 0; min-height: 2px; }
+  .chart .c.we div { background: var(--blue); }
+  .chart-lab { display: flex; gap: 3px; min-width: 100%; }
+  .chart-lab span { flex: 1 0 14px; text-align: center; font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 7px 8px; text-align: left; border-bottom: 1.5px dashed var(--muted); white-space: nowrap; }
+  th { font-size: 13px; color: var(--muted); border-bottom: 2.5px solid var(--ink); cursor: pointer; user-select: none; }
+  th.sorted { color: var(--ink); }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  th.n { text-align: right; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--soft); }
+  tr.warn td { background: var(--warn-bg); }
+  .tag { font-size: 11px; padding: 1px 8px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--soft); white-space: nowrap; }
+  .tag.red { background: var(--red); color: #fff; } .tag.green { background: var(--green); color: var(--sticker-ink); } .tag.yellow { background: var(--yellow); color: var(--sticker-ink); }
+  .bar-mini { display: inline-block; width: 70px; height: 9px; border: 1.5px solid var(--ink); border-radius: 99px; overflow: hidden; vertical-align: middle; margin-left: 4px; }
+  .bar-mini i { display: block; height: 100%; background: var(--yellow); }
+  .reading-t { max-width: 180px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
+
+  /* roster */
+  .paste { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .paste { grid-template-columns: 1fr; } }
+  .paste textarea { width: 100%; min-height: 170px; font-size: 14px; }
+  .roster td input { width: 100%; min-width: 60px; padding: 4px 6px; font-size: 14px; }
+  .roster td.no input { width: 64px; }
+  .roster tbody tr { cursor: default; }
+
+  /* modal */
+  .overlay { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal { background: var(--card); width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto; border: 2.5px solid var(--ink); border-radius: var(--wob); box-shadow: 6px 6px 0 var(--ink); padding: 18px; }
+  .modal h2 { margin: 0 0 10px; font-size: 20px; display: flex; justify-content: space-between; gap: 8px; }
+  .close { background: none; border: none; font-size: 28px; line-height: 1; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 640px) { .cols { grid-template-columns: 1fr; } }
+  .modal h3 { font-size: 15px; margin: 14px 0 6px; }
+  .modal ul { margin: 0; padding-left: 18px; line-height: 1.8; font-size: 14px; }
+  .heat { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; font-size: 11px; text-align: center; }
+  .heat b { color: var(--muted); font-weight: 400; }
+  .heat span { aspect-ratio: 1; border-radius: 5px; border: 1.5px solid var(--soft); display: flex; align-items: center; justify-content: center; font-family: var(--num); font-size: 13px; }
+  .heat span.l1 { background: #fff1b8; border-color: var(--ink); color: #1d1d1b; } .heat span.l2 { background: var(--yellow); border-color: var(--ink); color: #1d1d1b; }
+  .heat span.l3 { background: #ff9f40; border-color: var(--ink); color: #1d1d1b; } .heat span.l4 { background: var(--red); border-color: var(--ink); color: #fff; }
+  .sess { font-size: 13px; line-height: 1.7; }
+  .sess div { border-bottom: 1px dashed var(--muted); padding: 3px 0; }
+
+  #gate { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .gate-card { width: min(440px, 100%); padding: 24px; text-align: center; }
+  .gate-card h1 { font-size: 24px; margin: 6px 0 12px; }
+  .gate-card p { line-height: 1.7; }
+  .gate-card .em { background: var(--soft); border-radius: 10px; padding: 6px 10px; word-break: break-all; font-weight: 700; }
+  .gate-msg { color: var(--red); font-weight: 700; }
+  .spin { width: 36px; height: 36px; margin: 10px auto; border-radius: 50%; border: 4px solid var(--soft); border-top-color: var(--red); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--yellow); color: var(--sticker-ink); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 8px 18px; border-radius: var(--wob-s); font-size: 14px; font-weight: 700; z-index: 120; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: calc(100% - 32px); text-align: center; }
+  .toast.show { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+<script src="../config.js"></script>
+</head>
+<body>
+<div id="gate"></div>
+<div class="app" id="app" hidden>
+  <header>
+    <h1>我的閱讀日曆 <small>老師後台</small></h1>
+    <div class="hd-right">
+      <span class="who" id="who"></span>
+      <a class="btn small" href="../">📅 學生頁</a>
+      <button class="btn small danger" id="logout">登出</button>
+    </div>
+  </header>
+  <div class="tabs" id="tabs">
+    <button data-t="overview" class="on">閱讀總覽</button>
+    <button data-t="roster">學生名單</button>
+  </div>
+
+  <section id="t-overview">
+    <div class="range sticker" id="range"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="panel sticker">
+      <h2><span id="chartTitle">全班每天閱讀頁數</span></h2>
+      <div class="chart-wrap"><div class="chart" id="chart"></div><div class="chart-lab" id="chartLab"></div></div>
+    </div>
+    <div class="panel sticker">
+      <h2><span>每位學生</span><span><span class="hint">點一列看詳細　</span><button class="btn small" id="csv">⬇ 匯出 CSV</button></span></h2>
+      <div class="table-wrap"><table id="tbl"></table></div>
+    </div>
+  </section>
+
+  <section id="t-roster" hidden>
+    <div class="panel sticker">
+      <h2>加入學生</h2>
+      <div class="paste">
+        <div>
+          <textarea id="pasteBox" placeholder="一行一位：座號　姓名　email&#10;1 王小明 s1100001@example.edu.tw&#10;2 李小華 s1100002@example.edu.tw"></textarea>
+          <div class="hint">可以直接從 Excel 複製「座號、姓名、email」三欄貼上，用空白、逗號或 Tab 分開都可以。同一個 email 再貼一次會更新座號和姓名。</div>
+        </div>
+        <div>
+          <div id="pastePreview" class="hint">貼上後這裡會顯示要加入的名單。</div>
+          <div style="margin-top:10px"><button class="btn primary" id="pasteSave" disabled>加入名單</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel sticker">
+      <h2><span>班級名單（<span id="rosterN">0</span> 人）</span></h2>
+      <div class="hint" style="margin-bottom:8px">學生用名單上的 Google 帳號登入 <b id="appUrl"></b> 就能使用。座號、姓名改完會自動儲存。</div>
+      <div class="table-wrap"><table class="roster" id="rosterTbl"></table></div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="modal" id="modal"></div></div>
+<div class="overlay" id="confirmBox" hidden style="z-index:60"><div class="modal" style="max-width:420px">
+  <h2 id="confirmMsg" style="font-size:17px; line-height:1.5"></h2>
+  <div style="display:flex; gap:10px; justify-content:flex-end"><button class="btn" id="confirmNo">取消</button><button class="btn primary" id="confirmYes">確定</button></div>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* 老師後台：看全班的閱讀量、管理學生名單。
+   只有「班級百寶箱」的擁有者和管理者（config/owner、members/{email} role=admin）可以進來。
+   讀的資料：rtStudents（名單）、rtUsers（每位學生的 sum 統計）、rtUsers/{email}/sessions（點開學生時才讀）。 */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const lower = s => String(s || '').trim().toLowerCase();
+const STAGES = ['神秘蛋蛋', '書蟲寶寶', '小書蟲', '閱讀小勇士', '書海探險家', '閱讀大魔王'];
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+function askConfirm(msg) {
+  return new Promise(res => {
+    $('#confirmMsg').textContent = msg; $('#confirmBox').hidden = false;
+    const done = v => { $('#confirmBox').hidden = true; res(v); };
+    $('#confirmYes').onclick = () => done(true); $('#confirmNo').onclick = () => done(false);
+  });
+}
+function fbErr(e) {
+  const c = (e && e.code) || '';
+  return { 'permission-denied': '沒有權限（Firestore 規則可能還沒更新）', unavailable: '連不上網路', 'resource-exhausted': '超過今天的免費用量' }[c] || (e && e.message) || String(e);
+}
+
+/* ---------- 登入 ---------- */
+const fb = { auth: null, fs: null, email: '' };
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.append(s); }); }
+function gate(kind, msg) {
+  const el = $('#gate');
+  if (!kind) { el.hidden = true; $('#app').hidden = false; return; }
+  el.hidden = false; $('#app').hidden = true;
+  const em = `<p class="em">${esc(fb.email)}</p>`;
+  const body = {
+    loading: `<div class="spin"></div><p>${esc(msg || '正在連線…')}</p>`,
+    login: `<p>老師用 Google 帳號登入，看全班的閱讀紀錄。</p><button class="btn primary" id="gLogin">用 Google 帳號登入</button>`,
+    noowner: `${em}<p>還沒有設定這個班級的擁有者（和班級百寶箱共用）。要把這個帳號設成擁有者嗎？設定後就不能改。</p>
+      <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap"><button class="btn" id="gLogin">換一個帳號</button><button class="btn primary" id="gOwner">設成擁有者</button></div>`,
+    denied: `${em}<p>這個帳號不是老師（班級百寶箱的擁有者或管理者），不能看後台。</p>
+      <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap"><button class="btn" id="gLogin">換一個帳號</button><a class="btn yellow" href="../">回到閱讀日曆</a></div>`,
+    error: `<p>${esc(msg || '發生錯誤')}</p><button class="btn primary" onclick="location.reload()">重新整理</button>`,
+  }[kind];
+  el.innerHTML = `<div class="gate-card sticker"><div style="font-size:48px">📚</div><h1>閱讀日曆老師後台</h1>${body}<p class="gate-msg" hidden></p></div>`;
+  if ($('#gLogin')) $('#gLogin').onclick = signIn;
+  if ($('#gOwner')) $('#gOwner').onclick = async () => {
+    try { await fb.fs.doc('config/owner').set({ email: fb.email, at: Date.now() }); location.reload(); }
+    catch (e) { gateMsg('設定失敗：' + fbErr(e)); }
+  };
+}
+function gateMsg(t) { const m = $('#gate .gate-msg'); if (m) { m.textContent = t; m.hidden = false; } }
+async function signIn() {
+  const p = new firebase.auth.GoogleAuthProvider();
+  p.setCustomParameters({ prompt: 'select_account' });
+  try { await fb.auth.signInWithPopup(p); }
+  catch (e) {
+    const c = e?.code || '';
+    if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return;
+    gateMsg(c === 'auth/popup-blocked' ? '瀏覽器擋住了登入視窗：請允許彈出視窗後再按一次。' : '登入失敗：' + fbErr(e));
+  }
+}
+async function getDoc(path) {
+  try { const s = await fb.fs.doc(path).get(); return s.exists ? s.data() : null; }
+  catch (e) { if (e.code === 'permission-denied') return null; throw e; }
+}
+async function start() {
+  if (!/^https?:$/.test(location.protocol)) return gate('error', '後台要用網址打開（https://floralinlolo-max.github.io/reading-tracker/admin/），不能直接雙擊檔案。');
+  gate('loading');
+  try {
+    for (const f of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js']) await loadScript(FB_SDK + f);
+    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+    fb.auth = firebase.auth(); fb.fs = firebase.firestore();
+  } catch { return gate('error', '登入服務載入失敗，請檢查網路，再重新整理網頁。'); }
+  let started = false;
+  fb.auth.onAuthStateChanged(async u => {
+    if (started) { if (!u || lower(u.email) !== fb.email) location.reload(); return; }
+    if (!u) return gate('login');
+    fb.email = lower(u.email);
+    gate('loading', '正在確認你的身分…');
+    try {
+      const owner = await getDoc('config/owner');
+      let admin = !!owner && lower(owner.email) === fb.email;
+      if (!admin) { const m = await getDoc('members/' + fb.email); admin = !!m && m.role === 'admin'; }
+      if (!admin) return gate(owner ? 'denied' : 'noowner');
+      started = true;
+      $('#who').textContent = fb.email;
+      $('#appUrl').textContent = new URL('../', location.href).href;
+      listen();
+      gate(null);
+    } catch (e) { gate('error', '讀不到雲端資料（' + fbErr(e) + '）'); }
+  });
+}
+$('#logout').onclick = async () => { if (await askConfirm('確定要登出嗎？')) { await fb.auth.signOut(); location.reload(); } };
+
+/* ---------- 資料 ---------- */
+let roster = {};    // email → { no, name }
+let users = {};     // email → { sum, at }
+let loaded = { roster: false, users: false };
+function listen() {
+  const fail = e => toast('讀取失敗：' + fbErr(e));
+  fb.fs.collection('rtStudents').onSnapshot(s => { roster = {}; s.forEach(d => roster[d.id] = d.data()); loaded.roster = true; renderAll(); }, fail);
+  fb.fs.collection('rtUsers').onSnapshot(s => { users = {}; s.forEach(d => users[d.id] = d.data()); loaded.users = true; renderAll(); }, fail);
+}
+function renderAll() {
+  if (!loaded.roster || !loaded.users) return;
+  renderOverview();
+  if (!document.activeElement?.closest?.('#rosterTbl')) renderRoster();   // 正在改名單時先不重畫
+}
+
+/* ---------- 期間 ---------- */
+let range = { key: 'month', from: '', to: '' };
+function setPreset(key) {
+  const t = new Date(), today = ymd(t);
+  let from = today, to = today;
+  if (key === 'week') { const d = new Date(t); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); from = ymd(d); }
+  if (key === 'month') from = ymd(new Date(t.getFullYear(), t.getMonth(), 1));
+  if (key === 'last') { from = ymd(new Date(t.getFullYear(), t.getMonth() - 1, 1)); to = ymd(new Date(t.getFullYear(), t.getMonth(), 0)); }
+  if (key === 'd30') { const d = new Date(t); d.setDate(d.getDate() - 29); from = ymd(d); }
+  if (key === 'term') {   // 上學期 8 月～1 月，下學期 2 月～7 月
+    const M = t.getMonth(), Y = t.getFullYear();
+    from = M >= 7 ? `${Y}-08-01` : M === 0 ? `${Y - 1}-08-01` : `${Y}-02-01`;
+  }
+  if (key === 'all') { from = allDates()[0] || today; }
+  range = { key, from, to };
+}
+function allDates() {
+  const s = new Set();
+  Object.values(users).forEach(u => Object.keys(u.sum?.dp || {}).forEach(d => s.add(d)));
+  return [...s].sort();
+}
+const inRange = d => d >= range.from && d <= range.to;
+function datesOfRange() {
+  const out = [], d = parseYmd(range.from), end = parseYmd(range.to);
+  while (d <= end && out.length < 800) { out.push(ymd(d)); d.setDate(d.getDate() + 1); }
+  return out;
+}
+function renderRange() {
+  const P = [['week', '本週'], ['month', '本月'], ['last', '上個月'], ['d30', '近 30 天'], ['term', '本學期'], ['all', '全部']];
+  $('#range').innerHTML = P.map(([k, v]) => `<button class="chip ${range.key === k ? 'on' : ''}" data-k="${k}">${v}</button>`).join('') +
+    `<span class="grow"></span><label class="hint">從 <input type="date" id="rFrom" value="${range.from}"></label><label class="hint">到 <input type="date" id="rTo" value="${range.to}"></label>`;
+  document.querySelectorAll('#range .chip').forEach(b => b.onclick = () => { setPreset(b.dataset.k); renderOverview(); });
+  const custom = () => { const f = $('#rFrom').value, t = $('#rTo').value; if (f && t && f <= t) { range = { key: 'custom', from: f, to: t }; renderOverview(); } };
+  $('#rFrom').onchange = custom; $('#rTo').onchange = custom;
+}
+
+/* ---------- 每位學生的統計 ---------- */
+function rows() {
+  const today = ymd(new Date()), weekAgo = ymd(new Date(Date.now() - 7 * 864e5));
+  const emails = [...new Set([...Object.keys(roster), ...Object.keys(users)])];
+  return emails.map(email => {
+    const r = roster[email], u = users[email], s = u?.sum || {};
+    const days = Object.entries(s.dp || {}).filter(([d, p]) => inRange(d) && p > 0);
+    const allDays = Object.keys(s.dp || {}).filter(d => (s.dp[d] || 0) > 0).sort();
+    const last = allDays[allDays.length - 1] || '';
+    return {
+      email, onRoster: !!r, joined: !!u,
+      no: r ? (r.no === '' || r.no == null ? 999 : +r.no) : 1000, noText: r ? (r.no ?? '') : '',
+      name: r?.name || '', pages: days.reduce((a, [, p]) => a + p, 0), days: days.length,
+      minutes: Object.entries(s.dm || {}).filter(([d]) => inRange(d)).reduce((a, [, m]) => a + m, 0),
+      doneIn: (s.done || []).filter(b => inRange(b.d)).length, doneAll: (s.done || []).length,
+      reading: s.reading || [], last, stale: !!u && last < weekAgo, today: last === today,
+      stage: s.stage || 0, pet: s.pet || '', points: s.points || 0, sum: s,
+    };
+  });
+}
+let sort = { k: 'no', dir: 1 };
+const COLS = [
+  ['no', '座號', 'n'], ['name', '姓名'], ['pages', '頁數', 'n'], ['days', '閱讀天數', 'n'], ['minutes', '分鐘', 'n'],
+  ['doneIn', '期間讀完', 'n'], ['doneAll', '累計讀完', 'n'], ['readingN', '正在讀'], ['last', '最後閱讀'], ['stage', '夥伴'],
+];
+function renderOverview() {
+  if (!range.from) setPreset('month');
+  renderRange();
+  const R = rows(), students = R.filter(r => r.onRoster);
+  const N = students.length || R.length;
+  const totPages = R.reduce((a, r) => a + r.pages, 0), totDone = R.reduce((a, r) => a + r.doneIn, 0);
+  const readers = students.filter(r => r.pages > 0).length;
+  $('#tiles').innerHTML = `
+    <div class="tile"><div class="v">${totPages.toLocaleString()}</div><div class="l">全班閱讀頁數</div></div>
+    <div class="tile"><div class="v">${totDone}</div><div class="l">讀完的書（本）</div></div>
+    <div class="tile"><div class="v">${readers}<small style="font-size:20px"> / ${students.length}</small></div><div class="l">有閱讀的學生</div></div>
+    <div class="tile"><div class="v">${N ? Math.round(totPages / N) : 0}</div><div class="l">平均每人頁數</div></div>`;
+  renderChart();
+  // table
+  const sorted = R.slice().sort((a, b) => {
+    if (a.onRoster !== b.onRoster) return a.onRoster ? -1 : 1;
+    const k = sort.k, va = k === 'readingN' ? a.reading.length : a[k], vb = k === 'readingN' ? b.reading.length : b[k];
+    return (va > vb ? 1 : va < vb ? -1 : a.no - b.no) * sort.dir;
+  });
+  $('#tbl').innerHTML = `<thead><tr>${COLS.map(([k, t, n]) => `<th class="${n || ''} ${sort.k === k ? 'sorted' : ''}" data-k="${k}">${t}${sort.k === k ? (sort.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead>
+    <tbody>${sorted.length ? sorted.map(r => {
+      const rd = r.reading[0];
+      const status = !r.onRoster ? '<span class="tag">不在名單</span>' : !r.joined ? '<span class="tag">尚未登入</span>' : r.today ? '<span class="tag green">今天有讀</span>' : r.stale ? '<span class="tag red">7 天沒讀</span>' : '';
+      return `<tr data-e="${esc(r.email)}" class="${r.onRoster && r.joined && r.stale ? 'warn' : ''}">
+        <td class="n">${esc(r.noText)}</td><td>${esc(r.name || r.email)} ${status}</td>
+        <td class="n"><b>${r.pages}</b></td><td class="n">${r.days}</td><td class="n">${r.minutes || ''}</td>
+        <td class="n">${r.doneIn || ''}</td><td class="n">${r.doneAll}</td>
+        <td>${rd ? `<span class="reading-t">${esc(rd.t)}</span><span class="bar-mini"><i style="width:${Math.min(100, Math.round(rd.p / rd.n * 100))}%"></i></span>${r.reading.length > 1 ? ` <small>+${r.reading.length - 1}</small>` : ''}` : ''}</td>
+        <td>${esc(r.last)}</td><td>${r.joined ? `Lv.${r.stage + 1} ${esc(STAGES[r.stage])}` : ''}</td></tr>`;
+    }).join('') : `<tr><td colspan="${COLS.length}" class="hint" style="text-align:center; padding:24px">還沒有學生。到「學生名單」貼上全班的 email。</td></tr>`}</tbody>`;
+  document.querySelectorAll('#tbl th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k; sort = sort.k === k ? { k, dir: -sort.dir } : { k, dir: ['no', 'name', 'last'].includes(k) ? 1 : -1 };
+    renderOverview();
+  });
+  document.querySelectorAll('#tbl tbody tr[data-e]').forEach(tr => tr.onclick = () => openStudent(tr.dataset.e));
+}
+function renderChart() {
+  const dates = datesOfRange(), byMonth = dates.length > 62;
+  const tot = {};
+  Object.values(users).forEach(u => Object.entries(u.sum?.dp || {}).forEach(([d, p]) => { if (inRange(d)) { const k = byMonth ? d.slice(0, 7) : d; tot[k] = (tot[k] || 0) + p; } }));
+  const keys = byMonth ? [...new Set(dates.map(d => d.slice(0, 7)))] : dates;
+  const max = Math.max(1, ...keys.map(k => tot[k] || 0));
+  $('#chartTitle').textContent = byMonth ? '全班每月閱讀頁數' : '全班每天閱讀頁數（藍色是週末）';
+  $('#chart').innerHTML = keys.map(k => {
+    const v = tot[k] || 0, we = !byMonth && [0, 6].includes(parseYmd(k).getDay());
+    return `<div class="c ${we ? 'we' : ''}" title="${k}：${v} 頁"><em>${v || ''}</em><div style="height:${v / max * 82}%"></div></div>`;
+  }).join('');
+  const every = Math.ceil(keys.length / 16);
+  $('#chartLab').innerHTML = keys.map((k, i) => `<span>${i % every === 0 ? (byMonth ? +k.slice(5) + '月' : +k.slice(5, 7) + '/' + +k.slice(8)) : ''}</span>`).join('');
+}
+$('#csv').onclick = () => {
+  const R = rows().sort((a, b) => (a.onRoster === b.onRoster ? a.no - b.no : a.onRoster ? -1 : 1));
+  const head = ['座號', '姓名', 'email', `頁數（${range.from}~${range.to}）`, '閱讀天數', '閱讀分鐘', '期間讀完本數', '累計讀完本數', '正在讀', '最後閱讀日', '夥伴階段'];
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [head, ...R.map(r => [r.noText, r.name, r.email, r.pages, r.days, r.minutes, r.doneIn, r.doneAll, r.reading.map(b => b.t).join('、'), r.last, r.joined ? STAGES[r.stage] : '尚未登入'])].map(a => a.map(q).join(','));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv' }));
+  a.download = `全班閱讀量_${range.from}_${range.to}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+};
+
+/* ---------- 學生詳細 ---------- */
+async function openStudent(email) {
+  const r = rows().find(x => x.email === email); if (!r) return;
+  const s = r.sum, end = parseYmd(range.to), y = end.getFullYear(), m = end.getMonth();
+  const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate(), lead = (first.getDay() + 6) % 7;
+  let heat = '一二三四五六日'.split('').map(c => `<b>${c}</b>`).join('') + '<i></i>'.repeat(lead);
+  for (let d = 1; d <= days; d++) {
+    const p = (s.dp || {})[`${y}-${pad(m + 1)}-${pad(d)}`] || 0;
+    heat += `<span class="${p ? 'l' + (p < 10 ? 1 : p < 30 ? 2 : p < 60 ? 3 : 4) : ''}" title="${p} 頁">${d}</span>`;
+  }
+  $('#modal').innerHTML = `
+    <h2><span>${esc(r.noText !== '' ? r.noText + ' 號 ' : '')}${esc(r.name || r.email)}</span><button class="close" onclick="closeModal()" aria-label="關閉">×</button></h2>
+    <div class="hint">${esc(r.email)}${r.joined ? `　夥伴：Lv.${r.stage + 1} ${esc(STAGES[r.stage])}${s.pet && s.pet !== STAGES[r.stage] ? `（${esc(s.pet)}）` : ''}　積分 ${r.points}` : '　還沒有登入過'}</div>
+    <div class="cols">
+      <div>
+        <h3>${y} 年 ${m + 1} 月每天頁數</h3><div class="heat">${heat}</div>
+        <h3>正在讀（${r.reading.length}）</h3>
+        <ul>${r.reading.map(b => `<li>${esc(b.t)}　${b.p}/${b.n} 頁</li>`).join('') || '<li class="hint">沒有</li>'}</ul>
+        <h3>讀完的書（${r.doneAll}）</h3>
+        <ul>${(s.done || []).map(b => `<li>${esc(b.t)}　<small class="hint">${esc(b.d)}${b.r ? ' ' + '★'.repeat(b.r) : ''}</small></li>`).join('') || '<li class="hint">還沒有</li>'}</ul>
+      </div>
+      <div><h3>最近的閱讀紀錄</h3><div class="sess" id="sess"><div class="hint">讀取中…</div></div></div>
+    </div>`;
+  $('#overlay').hidden = false;
+  if (!r.joined) { $('#sess').innerHTML = '<div class="hint">還沒有紀錄</div>'; return; }
+  try {
+    const [bs, ss] = await Promise.all([
+      fb.fs.collection(`rtUsers/${email}/books`).get(),
+      fb.fs.collection(`rtUsers/${email}/sessions`).orderBy('date', 'desc').limit(40).get(),
+    ]);
+    const title = {}; bs.forEach(d => title[d.id] = d.data().title);
+    $('#sess').innerHTML = ss.empty ? '<div class="hint">還沒有紀錄</div>' : ss.docs.map(d => {
+      const x = d.data();
+      return `<div><b>${esc(x.date)}</b>　${esc(title[x.bookId] || '（已刪除的書）')}　第 ${x.fromPage}→${x.toPage} 頁${x.minutes ? '・' + x.minutes + ' 分鐘' : ''}${x.note ? `<br><small class="hint">「${esc(x.note)}」</small>` : ''}</div>`;
+    }).join('');
+  } catch (e) { $('#sess').innerHTML = `<div class="hint">讀不到：${esc(fbErr(e))}</div>`; }
+}
+function closeModal() { $('#overlay').hidden = true; }
+$('#overlay').onclick = e => { if (e.target.id === 'overlay') closeModal(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#confirmBox').hidden) $('#confirmNo').click(); else closeModal(); } });
+
+/* ---------- 學生名單 ---------- */
+function parsePaste(text) {
+  const out = [], bad = [];
+  text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).forEach(line => {
+    const m = line.match(/[^\s,;，、\t]+@[^\s,;，、\t]+\.[^\s,;，、\t]+/);
+    if (!m) { bad.push(line); return; }
+    const email = lower(m[0]), rest = line.replace(m[0], ' ').split(/[\s,;，、\t]+/).filter(Boolean);
+    const noI = rest.findIndex(x => /^\d{1,3}$/.test(x));
+    const no = noI >= 0 ? +rest.splice(noI, 1)[0] : '';
+    out.push({ email, no, name: rest.join(' ') });
+  });
+  return { out, bad };
+}
+$('#pasteBox').oninput = () => {
+  const { out, bad } = parsePaste($('#pasteBox').value);
+  $('#pasteSave').disabled = !out.length;
+  $('#pastePreview').innerHTML = !out.length && !bad.length ? '貼上後這裡會顯示要加入的名單。' :
+    `<b>${out.length} 位</b>：` + out.map(p => `${esc(p.no)} ${esc(p.name)} <small>${esc(p.email)}</small>${roster[p.email] ? '（更新）' : ''}`).join('、') +
+    (bad.length ? `<br><span style="color:var(--red)">${bad.length} 行找不到 email，不會加入：${bad.map(esc).join('、')}</span>` : '');
+};
+$('#pasteSave').onclick = async () => {
+  const { out } = parsePaste($('#pasteBox').value);
+  if (!out.length) return;
+  $('#pasteSave').disabled = true;
+  try {
+    for (let i = 0; i < out.length; i += 400) {
+      const b = fb.fs.batch();
+      out.slice(i, i + 400).forEach(p => b.set(fb.fs.doc('rtStudents/' + p.email), { no: p.no, name: p.name, at: Date.now() }));
+      await b.commit();
+    }
+    $('#pasteBox').value = ''; $('#pasteBox').oninput();
+    toast(`已加入 ${out.length} 位學生`);
+  } catch (e) { toast('加入失敗：' + fbErr(e)); $('#pasteSave').disabled = false; }
+};
+function renderRoster() {
+  const list = Object.entries(roster).map(([email, r]) => ({ email, ...r })).sort((a, b) => (a.no === '' ? 999 : a.no) - (b.no === '' ? 999 : b.no) || a.email.localeCompare(b.email));
+  $('#rosterN').textContent = list.length;
+  $('#rosterTbl').innerHTML = `<thead><tr><th>座號</th><th>姓名</th><th>Google 帳號（email）</th><th>狀態</th><th></th></tr></thead><tbody>${
+    list.map(r => `<tr data-e="${esc(r.email)}"><td class="no"><input type="number" min="0" value="${esc(r.no)}" data-f="no" aria-label="座號"></td>
+      <td><input value="${esc(r.name)}" data-f="name" aria-label="姓名"></td><td>${esc(r.email)}</td>
+      <td>${users[r.email] ? '<span class="tag green">已登入</span>' : '<span class="tag">尚未登入</span>'}</td>
+      <td><button class="btn small danger" data-del="1">移除</button></td></tr>`).join('') ||
+    '<tr><td colspan="5" class="hint" style="text-align:center; padding:20px">名單是空的，請在上面貼上全班的座號、姓名和 email。</td></tr>'}</tbody>`;
+  document.querySelectorAll('#rosterTbl input').forEach(inp => inp.onchange = async () => {
+    const email = inp.closest('tr').dataset.e, r = roster[email]; if (!r) return;
+    const v = inp.dataset.f === 'no' ? (inp.value === '' ? '' : +inp.value) : inp.value.trim();
+    try { await fb.fs.doc('rtStudents/' + email).set({ no: r.no ?? '', name: r.name ?? '', [inp.dataset.f]: v, at: Date.now() }); toast('已儲存'); }
+    catch (e) { toast('沒有存到：' + fbErr(e)); }
+  });
+  document.querySelectorAll('#rosterTbl [data-del]').forEach(b => b.onclick = async () => {
+    const email = b.closest('tr').dataset.e, r = roster[email];
+    if (!await askConfirm(`把 ${r.name || email} 移出名單？移出後他就不能登入閱讀日曆（已經記錄的閱讀資料會保留，再加回來就看得到）。`)) return;
+    try { await fb.fs.doc('rtStudents/' + email).delete(); toast('已移除'); } catch (e) { toast('移除失敗：' + fbErr(e)); }
+  });
+}
+
+/* ---------- 分頁 ---------- */
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  $('#t-overview').hidden = b.dataset.t !== 'overview'; $('#t-roster').hidden = b.dataset.t !== 'roster';
+  if (b.dataset.t === 'roster') renderRoster();
+});
+
+start();
+</script>
+</body>
+</html>
